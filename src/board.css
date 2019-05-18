@@ -1,0 +1,31 @@
+.board {
+  border-radius: 5px;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.container {
+  background-color: #b7bebe;
+  border: 2px solid #f76707;
+  height: 250px;
+  width: 550px;
+  overflow: scroll;
+  white-space: nowrap;
+  margin: 0 auto;
+}
+
+.wrapper div {
+  display: inline-block;
+}
+
+.placeholder {
+  border: 1px dashed black;
+  width: 40px;
+  height: 40px;
+}
+
+.possible_location_placeholder {
+  border: 1px dashed red;
+  width: 40px;
+  height: 40px;
+}

@@ -1,0 +1,51 @@
+h1 {
+  font-family: Lobster, monospace;
+  text-align: center;
+}
+
+h2 {
+  text-align: center;
+}
+
+h3 {
+  background-color: blueviolet;
+  text-align: center;
+}
+
+button {
+  font-family: Verdana, serif;
+  font-size: 1em;
+  color: white;
+  background-image: -webkit-linear-gradient(top, grey, dimgrey);
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: block;
+  margin: 10px auto 0px auto;
+  cursor: pointer;
+}
+
+button:disabled,
+button[disabled]{
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+
+.time_control {
+  text-align: center;
+}
+
+.time_control button {
+  display: inline;
+  margin-right: 10px;
+}
+
+.statistics {
+  text-align: center;
+  padding: 5px;
+}
+
+.statistics h4 {
+  display: inline;
+  padding: 5px;
+}
