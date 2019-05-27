@@ -6,8 +6,7 @@
   "scripts": {
     "build": "webpack --mode development",
     "build-watch": "webpack --watch --mode development",
-    "start": "node server.js",
-    "heroku-postbuild": "webpack -p"
+    "start": "react-scripts start"
   },
   "author": "Regev Golan and Amir Keren",
   "license": "MIT",
@@ -25,9 +24,24 @@
     "react-dom": "^16.8.2",
     "style-loader": "^0.23.1",
     "webpack": "^4.29.4",
-    "webpack-cli": "^3.2.3"
+    "webpack-cli": "^3.2.3",
+    "lodash": "^4.17.11"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.2.5"
+    "@babel/polyfill": "^7.2.5",
+    "react-scripts": "^3.0.1"
+  },
+  "proxy": "http://localhost:8000",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
