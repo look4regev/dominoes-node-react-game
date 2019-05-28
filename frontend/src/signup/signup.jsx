@@ -17,12 +17,16 @@ class SignUp extends Component {
             method: 'post',
             body: data
         }).then(res => {
-                if (res.status === 200) {
-                    this.props.sendData();
-                } else {
-                    return res.json();
-                }
-            });
+            if (res.status === 200) {
+                this.props.sendData();
+            } else {
+                return res.json();
+            }
+        }).then(jsonData => {
+            if (jsonData) {
+                alert(jsonData.error);
+            }
+        });
     }
 
     updateInputValue(evt) {
