@@ -6,28 +6,21 @@ class Dominoes extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            isSignedUp: false
+            isSignedUp: false,
+            username: ''
         };
         this.getData = this.getData.bind(this);
     }
 
-    componentDidMount() {
-
-    }
-
-    componentWillUnmount() {
-
-    }
-
-    getData(val) {
-        this.setState({isSignedUp: true});
+    getData(username) {
+        this.setState({isSignedUp: true, username: username});
     }
 
     render() {
         return (
             <div>
                 {!this.state.isSignedUp && <SignUp sendData={this.getData}/>}
-                {this.state.isSignedUp && <Lobby />}
+                {this.state.isSignedUp && <Lobby username={this.state.username} />}
             </div>
         );
     }

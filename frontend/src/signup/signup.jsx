@@ -12,13 +12,14 @@ class SignUp extends Component {
 
     signUp() {
         const data = new URLSearchParams();
-        data.append('username', this.state.inputValue);
+        const username = this.state.inputValue;
+        data.append('username', username);
         fetch('/signup', {
             method: 'post',
             body: data
         }).then(res => {
             if (res.status === 200) {
-                this.props.sendData();
+                this.props.sendData(username);
             } else {
                 return res.json();
             }
