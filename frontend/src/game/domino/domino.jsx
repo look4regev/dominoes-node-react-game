@@ -28,6 +28,8 @@ class Domino extends Component {
         case Down:
           dominoCopy.direction = Left;
           break;
+        default:
+          break;
       }
       this.props.sendData(dominoCopy);
       this.setState({domino: dominoCopy});

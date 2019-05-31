@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 
 import "./lobby.css";
+import GameRooms from "./gamerooms.jsx";
 
 class Lobby extends Component {
     constructor(props) {
@@ -10,9 +11,11 @@ class Lobby extends Component {
             games: {},
             players: [],
             gameNameInput: '',
-            gamePlayersInput: ''
+            gamePlayersInput: '2'
         };
-        this.handleSubmit = this.handleSubmit.bind(this);
+        this.createGame = this.createGame.bind(this);
+        this.logout = this.logout.bind(this);
+        this.getGameData = this.getGameData.bind(this);
     }
 
     componentDidMount() {
@@ -22,6 +25,9 @@ class Lobby extends Component {
             }).then(response => response.json())
             .then(data => {
                 this.setState({players: data});
+                if (!this.state.players.includes(this.state.username)) {
+                    window.location.reload();
+                }
             });
             fetch('/games', {
                 method: 'get'
@@ -44,9 +50,36 @@ class Lobby extends Component {
         this.setState({gamePlayersInput: event.target.value});
     }
 
+    getGameData(isInGame) {
+        this.props.sendGameData(isInGame);
+    }
+
+    logout() {
+        const data = new URLSearchParams();
+        data.append('username', this.state.username);
+        fetch('/logout', {
+            method: 'post',
+            body: data
+        }).then(res => {
+            if (res.status === 200) {
+                window.location.reload();
+            } else {
+                return res.json();
+            }
+        }).then(jsonData => {
+            if (jsonData) {
+                alert(jsonData.error);
+            }
+        });
+    }
+
     createGame() {
-        console.log(this.state.gameNameInput, this.state.gamePlayersInput);
-        if (this.state.gamePlayersInput != 2 && this.state.gamePlayersInput != 3) {
+        if (!this.state.gamePlayersInput) {
+            alert("Must provide number of players");
+            return;
+        }
+        const numberOfPlayers = parseInt(this.state.gamePlayersInput);
+        if (numberOfPlayers !== 2 && numberOfPlayers !== 3) {
             alert('Number of players has to be either 2 or 3');
             return;
         }
@@ -55,7 +88,7 @@ class Lobby extends Component {
             return;
         }
         const data = new URLSearchParams();
-        data.append('username', this.state.inputValue);
+        data.append('username', this.state.username);
         data.append('gamename', this.state.gameNameInput);
         data.append('players', this.state.gamePlayersInput);
         fetch('/creategame', {
@@ -63,7 +96,7 @@ class Lobby extends Component {
             body: data
         }).then(res => {
             if (res.status === 200) {
-                console.log('success');
+                this.setState({gameNameInput: '', gamePlayersInput: '2'});
             } else {
                 return res.json();
             }
@@ -72,35 +105,13 @@ class Lobby extends Component {
                 alert(jsonData.error);
             }
         });
-        event.preventDefault();
-    }
-
-    joinGame(event) {
-        console.log(this.state.gameNameInput, this.state.gamePlayersInput);
-        const data = new URLSearchParams();
-        data.append('username', this.state.username);
-        data.append('gamename', event.target.value);
-        fetch('/joingame', {
-            method: 'post',
-            body: data
-        }).then(res => {
-            if (res.status === 200) {
-                console.log('success');
-            } else {
-                return res.json();
-            }
-        }).then(jsonData => {
-            if (jsonData) {
-                alert(jsonData.error);
-            }
-        });
-        event.preventDefault();
     }
 
     render() {
         return (
             <div className="lobby">
                 <h1>Lobby</h1>
+                <button onClick={this.logout}>Logout</button>
                 <div className="players">
                     <h2>Players</h2>
                     <ul>
@@ -111,25 +122,23 @@ class Lobby extends Component {
                 </div>
                 <div className="games">
                     <h2>Games</h2>
-                    <ul>
-                        {Object.keys(this.state.games).map((game) => (
-                            <li key={game}>{game}<button onClick={(event) => this.joinGame(event)}>
-                                Join
-                            </button></li>
-                        ))}
-                    </ul>
                     <h3>Create Game</h3>
-                    <form onSubmit={this.createGame}>
+                    <div className="creategame">
                         <label>
-                            Name:
+                            Game Name:
                             <input type="text" value={this.state.gameNameInput} onChange={evt => this.handleNameChange(evt)} />
                         </label>
                         <label>
                             Players:
-                            <input type="text" value={this.state.gamePlayersInput} onChange={evt => this.handlePlayersChange(evt)} />
+                            <select onChange={evt => this.handlePlayersChange(evt)} value={this.state.gamePlayersInput}>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
                         </label>
-                        <input type="submit" value="Create" />
-                    </form>
+                        <button onClick={this.createGame}>Create</button>
+                    </div>
+                    <h3>Game Rooms</h3>
+                    <GameRooms sendGameData={this.getGameData} games={this.state.games} username={this.state.username}/>
                 </div>
             </div >
         );

@@ -204,7 +204,6 @@ class Game extends Component {
             }
             stateCopy.board = boardDeepCopy;
             plays.push(stateCopy);
-            console.log(plays);
             const domino = AllDominoes[idDropped];
             AllDominoes[idDropped].placement = placement;
             let boardCopy = this.state.board;
@@ -244,7 +243,7 @@ class Game extends Component {
     }
 
     static onReset() {
-        return location.reload();
+        return window.location.reload();
     }
 
     getEndResult() {
@@ -358,7 +357,7 @@ class Game extends Component {
         const avg = this.state.plays_count > 0 ? Math.floor(this.state.elapsed_time / this.state.plays_count) : 0;
         return (
             <div>
-                <h1>Dominoes <img src={ImageHeadline} /> Game!</h1>
+                <h1>Dominoes <img src={ImageHeadline} alt='dominoesheader' /> Game!</h1>
                 <h2>Board:</h2>
                 <div
                     onDragOver={(e) => Game.onDragOver(e)}
@@ -375,7 +374,7 @@ class Game extends Component {
                     <button disabled={gameOver || (!gameOver && plays.length === 0)} onClick={() => this.onUndo()}>
                         Undo
                     </button>
-                    <button disabled={(gameOver && playsIndex === undefined || playsIndex === plays.length - 1) || !gameOver} onClick={() => this.nextStep()}>
+                    <button disabled={(gameOver && (playsIndex === undefined || playsIndex === plays.length - 1)) || !gameOver} onClick={() => this.nextStep()}>
                         Next
                     </button>
                 </div>
