@@ -27,7 +27,7 @@ class GameRooms extends Component {
                 body: data
             }).then(res => {
                 if (res.status === 200) {
-                    this.props.sendGameData(true);
+                    this.props.sendGameData(game.gamename);
                 } else {
                     return res.json();
                 }

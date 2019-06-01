@@ -8,27 +8,49 @@ class Dominoes extends Component {
         super(props);
         this.state = {
             isSignedUp: false,
-            isInGame: false,
+            games: {},
+            players: [],
+            activeGame: '',
             username: '',
         };
         this.getData = this.getData.bind(this);
         this.getGameData = this.getGameData.bind(this);
     }
 
+    componentDidMount() {
+        setInterval(() => {
+            fetch('/users', {
+                method: 'get'
+            }).then(response => response.json())
+                .then(data => {
+                    this.setState({players: data});
+                });
+            fetch('/games', {
+                method: 'get'
+            }).then(response => response.json())
+                .then(data => {
+                    this.setState({games: data});
+                });
+        }, 2000);
+    }
+
     getData(username) {
         this.setState({isSignedUp: true, username: username});
     }
 
-    getGameData(isInGame) {
-        this.setState({isInGame: isInGame});
+    getGameData(gamename) {
+        this.setState({activeGame: gamename});
     }
 
     render() {
         return (
             <div>
                 {!this.state.isSignedUp && <SignUp sendData={this.getData} />}
-                {this.state.isSignedUp && !this.state.isInGame && <Lobby sendGameData={this.getGameData} username={this.state.username} />}
-                {this.state.isInGame && <Game />}
+                {this.state.isSignedUp && !this.state.activeGame && <Lobby sendGameData={this.getGameData}
+                                                                           games={this.state.games}
+                                                                           players={this.state.players}
+                                                                           username={this.state.username} />}
+                {this.state.activeGame && <Game game={this.state.games[this.state.activeGame] }/>}
             </div>
         );
     }

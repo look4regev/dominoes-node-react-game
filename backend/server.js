@@ -158,6 +158,12 @@ router.post('/joingame', function(req, res) {
     res.sendStatus(200);
 });
 
+router.get('/issignedin', function(req, res) {
+    res.contentType('application/json');
+    const username = req.query.username;
+    usernames.includes(username) ? res.send({ "answer": "yes" }) : res.send({ "answer": "no" });
+});
+
 router.get('/users', function(req, res) {
     res.contentType('application/json');
     res.send(usernames);

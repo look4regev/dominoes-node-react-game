@@ -8,38 +8,14 @@ class Lobby extends Component {
         super(props);
         this.state = {
             username: this.props.username,
-            games: {},
-            players: [],
+            games: this.props.games,
+            players: this.props.players,
             gameNameInput: '',
             gamePlayersInput: '2'
         };
         this.createGame = this.createGame.bind(this);
         this.logout = this.logout.bind(this);
         this.getGameData = this.getGameData.bind(this);
-    }
-
-    componentDidMount() {
-        this.interval = setInterval(() => {
-            fetch('/users', {
-                method: 'get'
-            }).then(response => response.json())
-            .then(data => {
-                this.setState({players: data});
-                if (!this.state.players.includes(this.state.username)) {
-                    window.location.reload();
-                }
-            });
-            fetch('/games', {
-                method: 'get'
-            }).then(response => response.json())
-            .then(data => {
-                this.setState({games: data});
-            });
-        }, 2000);
-    }
-
-    componentWillUnmount() {
-        clearInterval(this.interval);
     }
 
     handleNameChange(event) {
@@ -50,8 +26,8 @@ class Lobby extends Component {
         this.setState({gamePlayersInput: event.target.value});
     }
 
-    getGameData(isInGame) {
-        this.props.sendGameData(isInGame);
+    getGameData(gamename) {
+        this.props.sendGameData(gamename);
     }
 
     logout() {
@@ -71,6 +47,23 @@ class Lobby extends Component {
                 alert(jsonData.error);
             }
         });
+    }
+
+    componentDidMount() {
+        setInterval(() => {
+            fetch('/issignedin?username=' + this.state.username, {
+                method: 'get'
+            }).then(response => response.json())
+                .then((data) => {
+                    if (data.answer === 'no') {
+                        window.location.reload();
+                    }
+                });
+        }, 5000);
+    }
+
+    componentWillReceiveProps({games, players}) {
+        this.setState({...this.state, games, players});
     }
 
     createGame() {

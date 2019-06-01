@@ -39,6 +39,7 @@ class Game extends Component {
             }
         }
         this.state = {
+            games: this.props.games,
             player1Deck: Object.keys(AllDominoes).filter((k) => randomPlayer1Dominoes.includes(k)),
             bank: Object.keys(AllDominoes).filter((k) => !randomPlayer1Dominoes.includes(k)),
             board: board,
