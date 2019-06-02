@@ -6,58 +6,41 @@ import PlayerDeck from "./playerDeck.jsx";
 import ImageHeadline from "./dominoes-header.jpg"
 import { Left, Right, Up, Down } from "./domino/halfDomino.jsx";
 
-const PlayerInitialDominoesCount = 6;
-
 export const Empty = -1;
 export const Separator = -2;
 
-let AllDominoes = {
-    0:  { dot: 0,  direction: Left }, 1:  { dot: 1,  direction: Left }, 2:  { dot: 2,  direction: Left }, 3:  { dot: 3,  direction: Left }, 4:  { dot: 4,  direction: Left }, 5:  { dot: 5,  direction: Left }, 6:  { dot: 6,  direction: Left },
-    11: { dot: 11, direction: Left }, 12: { dot: 12, direction: Left }, 13: { dot: 13, direction: Left }, 14: { dot: 14, direction: Left }, 15: { dot: 15, direction: Left }, 16: { dot: 16 , direction: Left },
-    22: { dot: 22, direction: Left }, 23: { dot: 23, direction: Left }, 24: { dot: 24, direction: Left }, 25: { dot: 25, direction: Left }, 26: { dot: 26, direction: Left },
-    33: { dot: 33, direction: Left }, 34: { dot: 34, direction: Left }, 35: { dot: 35, direction: Left }, 36: { dot: 36, direction: Left },
-    44: { dot: 44, direction: Left }, 45: { dot: 45, direction: Left }, 46: { dot: 46, direction: Left },
-    55: { dot: 55, direction: Left }, 56: { dot: 56, direction: Left },
-    66: { dot: 66, direction: Left }
-};
-
-let plays = [];
-let playsIndex;
-let gameOver = false;
+let playerIndex = -1;
 
 class Game extends Component {
     constructor(props) {
         super(props);
-        const randomPlayer1Dominoes = Game.getRandomPlayer1Dominoes();
-        const num_rows = 9;
-        const num_cols = 9;
-        let board = new Array(num_rows);
-        for (let i = 0; i < num_rows; i++) {
-            board[i] = new Array(num_cols);
-            for (let j = 0; j < num_cols; j++) {
-                board[i][j] = { dot: Empty };
+        this.state = {
+            game: this.props.game,
+            username: this.props.username
+        };
+        for (let i = 0; i < this.state.game.players; i++) {
+            if (this.state.game.registered_users[i] === this.state.username) {
+                playerIndex = i;
+                break;
             }
         }
-        this.state = {
-            games: this.props.games,
-            player1Deck: Object.keys(AllDominoes).filter((k) => randomPlayer1Dominoes.includes(k)),
-            bank: Object.keys(AllDominoes).filter((k) => !randomPlayer1Dominoes.includes(k)),
-            board: board,
-            plays_count: 0,
-            valid_placements: [],
-            pieces_taken: 0,
-            total_score: 0,
-            elapsed_time: 0,
-        };
         this.getData = this.getData.bind(this);
         this.getDrag = this.getDrag.bind(this);
+    }
+
+    getGameState() {
+        return this.state.game.game_states[playerIndex];
+    }
+    
+    componentWillReceiveProps({games}) {
+        this.setState({...this.state, games});
     }
 
     componentDidMount() {
         this.interval = setInterval(() => {
             this.setState({
-                    elapsed_time: this.state.elapsed_time + 1}
-                );
+                elapsed_time: this.getGameState().elapsed_time + 1}
+            );
         }, 1000);
     }
 
@@ -66,25 +49,13 @@ class Game extends Component {
     }
 
     getData(val) {
-        AllDominoes[val.dot].direction = val.direction;
+        this.getGameState().allDominoes[val.dot].direction = val.direction;
     }
 
     getDrag(val) {
         this.setState({
-            valid_placements: val ? this.getValidPlacements(AllDominoes[val]) : [],
+            valid_placements: val ? this.getValidPlacements(this.getGameState().allDominoes[val]) : [],
         });
-    }
-
-    static getRandomPlayer1Dominoes() {
-        const randomPlayer1Dominoes = [];
-        const keys = Object.keys(AllDominoes);
-        while (randomPlayer1Dominoes.length < PlayerInitialDominoesCount) {
-            const randDomino = keys[Math.floor(Math.random() * keys.length)];
-            if (!randomPlayer1Dominoes.includes(randDomino)) {
-                randomPlayer1Dominoes.push(randDomino);
-            }
-        }
-        return randomPlayer1Dominoes;
     }
 
     static onDragOver(ev) {
@@ -93,8 +64,8 @@ class Game extends Component {
 
     getValidPlacements(domino) {
         let validPlacements = [];
-        for (let i = 0; i < this.state.board.length; i++) {
-            for (let j = 0; j < this.state.board[i].length; j++) {
+        for (let i = 0; i < this.state.game.board.length; i++) {
+            for (let j = 0; j < this.state.game.board[i].length; j++) {
                 const placement = { x: i, y: j };
                 if (this.isValidPlacement(domino, placement)) {
                     validPlacements.push(placement.x + ',' + placement.y);
@@ -107,8 +78,8 @@ class Game extends Component {
     isValidPlacement(domino, placement) {
         const x = parseInt(placement.x);
         const y = parseInt(placement.y);
-        const num_rows = this.state.board.length;
-        const num_cols = this.state.board[0].length;
+        const num_rows = this.state.game.board.length;
+        const num_cols = this.state.game.board[0].length;
         if (this.state.total_score === 0) {
             return x < num_rows - 1 && x > 0 && y < num_cols - 1 && y > 0;
         }
@@ -116,7 +87,7 @@ class Game extends Component {
         let dots2 = Math.floor(domino.dot % 10);
         if (domino.direction === Left || domino.direction === Right) {
             //if already occupied
-            if (this.state.board[x][y].dot !== Empty || this.state.board[x][Math.max(0, y - 1)].dot !== Empty || this.state.board[x][Math.min(num_cols - 1, y + 1)].dot !== Empty) {
+            if (this.state.game.board[x][y].dot !== Empty || this.state.game.board[x][Math.max(0, y - 1)].dot !== Empty || this.state.game.board[x][Math.min(num_cols - 1, y + 1)].dot !== Empty) {
                 return false;
             }
             if (domino.direction === Right) {
@@ -125,32 +96,32 @@ class Game extends Component {
                 dots2 = temp;
             }
             //to the right normal
-            if (y >= 2 && y < num_cols - 1 && (this.state.board[x][y - 2].direction === Left || this.state.board[x][y - 2].direction === Right) && (this.state.board[x][y - 2].dot === dots1 || dots1 === 0 || this.state.board[x][y - 2].dot === 0)) {
+            if (y >= 2 && y < num_cols - 1 && (this.state.game.board[x][y - 2].direction === Left || this.state.game.board[x][y - 2].direction === Right) && (this.state.game.board[x][y - 2].dot === dots1 || dots1 === 0 || this.state.game.board[x][y - 2].dot === 0)) {
                 return true;
             }
             //to the right separator
-            if (y >= 2 && x >= 1 && x < num_rows - 1 && (this.state.board[x][y - 2].direction === Up || this.state.board[x][y - 2].direction === Down) && this.state.board[x][y - 2].dot === Separator && this.state.board[x - 1][y - 2].dot === this.state.board[x + 1][y - 2].dot && (this.state.board[x + 1][y - 2].dot === 0 || dots1 === 0 || this.state.board[x + 1][y - 2].dot === dots1)) {
+            if (y >= 2 && x >= 1 && x < num_rows - 1 && (this.state.game.board[x][y - 2].direction === Up || this.state.game.board[x][y - 2].direction === Down) && this.state.game.board[x][y - 2].dot === Separator && this.state.game.board[x - 1][y - 2].dot === this.state.game.board[x + 1][y - 2].dot && (this.state.game.board[x + 1][y - 2].dot === 0 || dots1 === 0 || this.state.game.board[x + 1][y - 2].dot === dots1)) {
                 return true;
             }
             //to the left normal
-            if (y > 0 && y < num_cols - 2 && (this.state.board[x][y + 2].direction === Left || this.state.board[x][y + 2].direction === Right) && (this.state.board[x][y + 2].dot === dots2 || dots2 === 0 || this.state.board[x][y + 2].dot === 0)) {
+            if (y > 0 && y < num_cols - 2 && (this.state.game.board[x][y + 2].direction === Left || this.state.game.board[x][y + 2].direction === Right) && (this.state.game.board[x][y + 2].dot === dots2 || dots2 === 0 || this.state.game.board[x][y + 2].dot === 0)) {
                 return true;
             }
             //to the left separator
-            if (y < num_cols - 2 && x >= 1 && x < num_rows - 1 && (this.state.board[x][y + 2].direction === Up || this.state.board[x][y + 2].direction === Down) && this.state.board[x][y + 2].dot === Separator && this.state.board[x - 1][y + 2].dot === this.state.board[x + 1][y + 2].dot && (this.state.board[x + 1][y + 2].dot === 0 || dots2 === 0 || this.state.board[x + 1][y + 2].dot === dots2)) {
+            if (y < num_cols - 2 && x >= 1 && x < num_rows - 1 && (this.state.game.board[x][y + 2].direction === Up || this.state.game.board[x][y + 2].direction === Down) && this.state.game.board[x][y + 2].dot === Separator && this.state.game.board[x - 1][y + 2].dot === this.state.game.board[x + 1][y + 2].dot && (this.state.game.board[x + 1][y + 2].dot === 0 || dots2 === 0 || this.state.game.board[x + 1][y + 2].dot === dots2)) {
                 return true;
             }
             //above separator
-            if (x >= 1 && (this.state.board[x - 1][y].direction === Up || this.state.board[x - 1][y].direction === Down) && dots1 === dots2 && (this.state.board[x - 1][y].dot === dots1 || this.state.board[x - 1][y].dot === 0 || dots1 === 0)) {
+            if (x >= 1 && (this.state.game.board[x - 1][y].direction === Up || this.state.game.board[x - 1][y].direction === Down) && dots1 === dots2 && (this.state.game.board[x - 1][y].dot === dots1 || this.state.game.board[x - 1][y].dot === 0 || dots1 === 0)) {
                 return true;
             }
             //below separator
-            if (x < num_rows - 1 && (this.state.board[x + 1][y].direction === Up || this.state.board[x + 1][y].direction === Down) && dots1 === dots2 && (this.state.board[x + 1][y].dot === dots1 || this.state.board[x + 1][y].dot === 0 || dots1 === 0)) {
+            if (x < num_rows - 1 && (this.state.game.board[x + 1][y].direction === Up || this.state.game.board[x + 1][y].direction === Down) && dots1 === dots2 && (this.state.game.board[x + 1][y].dot === dots1 || this.state.game.board[x + 1][y].dot === 0 || dots1 === 0)) {
                 return true;
             }
         } else {
             //if already occupied
-            if (this.state.board[x][y].dot !== Empty || this.state.board[Math.max(0, x - 1)][y].dot !== Empty || this.state.board[Math.min(num_rows - 1, x + 1)][y].dot !== Empty) {
+            if (this.state.game.board[x][y].dot !== Empty || this.state.game.board[Math.max(0, x - 1)][y].dot !== Empty || this.state.game.board[Math.min(num_rows - 1, x + 1)][y].dot !== Empty) {
                 return false;
             }
             if (domino.direction === Down) {
@@ -159,27 +130,27 @@ class Game extends Component {
                 dots2 = temp;
             }
             //below normal
-            if (x >= 2 && x < num_rows - 1 && (this.state.board[x - 2][y].direction === Up || this.state.board[x - 2][y].direction === Down) && (this.state.board[x - 2][y].dot === dots1 || dots1 === 0 || this.state.board[x - 2][y].dot === 0)) {
+            if (x >= 2 && x < num_rows - 1 && (this.state.game.board[x - 2][y].direction === Up || this.state.game.board[x - 2][y].direction === Down) && (this.state.game.board[x - 2][y].dot === dots1 || dots1 === 0 || this.state.game.board[x - 2][y].dot === 0)) {
                 return true;
             }
             //below separator
-            if (x >= 2 && y >= 1 && y < num_cols - 1 && (this.state.board[x - 2][y].direction === Left || this.state.board[x - 2][y].direction === Right) && this.state.board[x - 2][y].dot === Separator && this.state.board[x - 2][y - 1].dot === this.state.board[x - 2][y + 1].dot && (this.state.board[x - 2][y + 1].dot === 0 || dots1 === 0 || this.state.board[x - 2][y + 1].dot === dots1)) {
+            if (x >= 2 && y >= 1 && y < num_cols - 1 && (this.state.game.board[x - 2][y].direction === Left || this.state.game.board[x - 2][y].direction === Right) && this.state.game.board[x - 2][y].dot === Separator && this.state.game.board[x - 2][y - 1].dot === this.state.game.board[x - 2][y + 1].dot && (this.state.game.board[x - 2][y + 1].dot === 0 || dots1 === 0 || this.state.game.board[x - 2][y + 1].dot === dots1)) {
                 return true;
             }
             //above normal
-            if (x < num_rows - 2 && x > 0 && (this.state.board[x + 2][y].direction === Up || this.state.board[x + 2][y].direction === Down) && (this.state.board[x + 2][y].dot === dots2 || dots2 === 0 || this.state.board[x + 2][y].dot === 0)) {
+            if (x < num_rows - 2 && x > 0 && (this.state.game.board[x + 2][y].direction === Up || this.state.game.board[x + 2][y].direction === Down) && (this.state.game.board[x + 2][y].dot === dots2 || dots2 === 0 || this.state.game.board[x + 2][y].dot === 0)) {
                 return true;
             }
             //above separator
-            if (x < num_rows - 2 && y >= 1 && y < num_cols - 1 && (this.state.board[x + 2][y].direction === Left || this.state.board[x + 2][y].direction === Right) && this.state.board[x + 2][y].dot === Separator && this.state.board[x + 2][y - 1].dot === this.state.board[x + 2][y + 1].dot && (this.state.board[x + 2][y + 1].dot === 0 || dots2 === 0 || this.state.board[x + 2][y + 1].dot === dots2)) {
+            if (x < num_rows - 2 && y >= 1 && y < num_cols - 1 && (this.state.game.board[x + 2][y].direction === Left || this.state.game.board[x + 2][y].direction === Right) && this.state.game.board[x + 2][y].dot === Separator && this.state.game.board[x + 2][y - 1].dot === this.state.game.board[x + 2][y + 1].dot && (this.state.game.board[x + 2][y + 1].dot === 0 || dots2 === 0 || this.state.game.board[x + 2][y + 1].dot === dots2)) {
                 return true;
             }
             //to the left separator
-            if (y >= 1 && (this.state.board[x][y - 1].direction === Left || this.state.board[x][y - 1].direction === Right) && dots1 === dots2 && (this.state.board[x][y - 1].dot === dots1 || this.state.board[x][y - 1].dot === 0 || dots1 === 0)) {
+            if (y >= 1 && (this.state.game.board[x][y - 1].direction === Left || this.state.game.board[x][y - 1].direction === Right) && dots1 === dots2 && (this.state.game.board[x][y - 1].dot === dots1 || this.state.game.board[x][y - 1].dot === 0 || dots1 === 0)) {
                 return true;
             }
             //to the right separator
-            if (y < num_cols - 1 && (this.state.board[x][y + 1].direction === Left || this.state.board[x][y + 1].direction === Right) && dots1 === dots2 && (this.state.board[x][y + 1].dot === dots1 || this.state.board[x][y + 1].dot === 0 || dots1 === 0)) {
+            if (y < num_cols - 1 && (this.state.game.board[x][y + 1].direction === Left || this.state.game.board[x][y + 1].direction === Right) && dots1 === dots2 && (this.state.game.board[x][y + 1].dot === dots1 || this.state.game.board[x][y + 1].dot === 0 || dots1 === 0)) {
                 return true;
             }
         }
@@ -191,23 +162,22 @@ class Game extends Component {
         if (ev.target.id) {
             const placement = { 'x': parseInt(ev.target.id.split(',')[0]), 'y': parseInt(ev.target.id.split(',')[1]) };
             const idDropped = parseInt(ev.dataTransfer.getData('id'));
-            if (!this.isValidPlacement(AllDominoes[idDropped], placement)) {
+            if (!this.isValidPlacement(this.getGameState().allDominoes[idDropped], placement)) {
                 return;
             }
             let stateCopy = Object.assign({}, this.state);
             delete stateCopy.valid_placements;
-            let boardDeepCopy = new Array(this.state.board.length);
-            for (let i = 0; i < this.state.board.length; i++) {
-                boardDeepCopy[i] = new Array(this.state.board[i].length);
-                for (let j = 0; j < this.state.board[i].length; j++) {
-                    boardDeepCopy[i][j] = { dot: this.state.board[i][j].dot, direction: this.state.board[i][j].direction };
+            let boardDeepCopy = new Array(this.state.game.board.length);
+            for (let i = 0; i < this.state.game.board.length; i++) {
+                boardDeepCopy[i] = new Array(this.state.game.board[i].length);
+                for (let j = 0; j < this.state.game.board[i].length; j++) {
+                    boardDeepCopy[i][j] = { dot: this.state.game.board[i][j].dot, direction: this.state.game.board[i][j].direction };
                 }
             }
             stateCopy.board = boardDeepCopy;
-            plays.push(stateCopy);
-            const domino = AllDominoes[idDropped];
-            AllDominoes[idDropped].placement = placement;
-            let boardCopy = this.state.board;
+            const domino = this.getGameState().allDominoes[idDropped];
+            this.getGameState().allDominoes[idDropped].placement = placement;
+            let boardCopy = this.state.game.board;
             let dots1;
             let dots2;
             if (domino.direction === Left || domino.direction === Up) {
@@ -232,7 +202,8 @@ class Game extends Component {
                 boardCopy[placement.x + 1][placement.y].dot = dots2;
                 boardCopy[placement.x + 1][placement.y].direction = domino.direction;;
             }
-            Game.resizeBoardIfNeeded(boardCopy);
+            this.resizeBoardIfNeeded(boardCopy);
+            //TODO - update this
             this.setState({
                 player1Deck: this.state.player1Deck.filter((k) => { return k !== idDropped.toString() }),
                 board: boardCopy,
@@ -248,20 +219,18 @@ class Game extends Component {
     }
 
     getEndResult() {
-        if (this.state.player1Deck.length === 0) {
+        if (this.state.game.player_deck.length === 0) {
             clearInterval(this.interval);
-            gameOver = true;
             return "Player wins!";
-        } else if (this.state.bank.length === 0) {
+        } else if (this.state.game.bank.length === 0) {
             clearInterval(this.interval);
-            gameOver = true;
             return "Player loses!"
         }
     }
 
     getBankDomino() {
         if (this.state.bank.length > 0) {
-            const randBankDomino = this.state.bank[Math.floor(Math.random() * this.state.bank.length)];
+            const randBankDomino = this.state.game.bank[Math.floor(Math.random() * this.state.game.bank.length)];
             let player1DeckCopy = this.state.player1Deck.concat(randBankDomino);
             let stateCopy = Object.assign({}, this.state);
             delete stateCopy.valid_placements;
@@ -275,8 +244,8 @@ class Game extends Component {
         }
     }
 
-    static resizeBoardIfNeeded(board) {
-        let min_row = board.length;
+    resizeBoardIfNeeded(board) {
+        let min_row = this.state.game.board.length;
         let min_col = board[0].length;
         let max_row = 0;
         let max_col = 0;
@@ -334,21 +303,6 @@ class Game extends Component {
         }
     }
 
-    nextStep() {
-        this.setState(plays[++playsIndex]);
-    }
-
-    prevStep() {
-        if (!playsIndex) {
-            playsIndex = plays.length - 1;
-        }
-        this.setState(plays[--playsIndex]);
-    }
-
-    onUndo() {
-        this.setState(plays.pop());
-    }
-
     render() {
         const endResult = this.getEndResult();
         const temp_mins = Math.floor(this.state.elapsed_time / 60);
@@ -363,25 +317,11 @@ class Game extends Component {
                 <div
                     onDragOver={(e) => Game.onDragOver(e)}
                     onDrop={(e) => this.onDrop(e)}>
-                    <Board allDominoes={AllDominoes} valid_placements={this.state.valid_placements} dominoes={this.state.board}/>
-                </div>
-                <div className="time_control">
-                    <button disabled={(gameOver && playsIndex === 0) || !gameOver} onClick={() => this.prevStep()}>
-                        Prev
-                    </button>
-                    <button disabled={!gameOver} onClick={() => Game.onReset()}>
-                        Reset
-                    </button>
-                    <button disabled={gameOver || (!gameOver && plays.length === 0)} onClick={() => this.onUndo()}>
-                        Undo
-                    </button>
-                    <button disabled={(gameOver && (playsIndex === undefined || playsIndex === plays.length - 1)) || !gameOver} onClick={() => this.nextStep()}>
-                        Next
-                    </button>
+                    <Board this.state.allDominoes={this.state.allDominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board}/>
                 </div>
                 <h2>Player deck:</h2>
                 <div onDragOver={(e) => Game.onDragOver(e)}>
-                    <PlayerDeck allDominoes={AllDominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={this.state.player1Deck} />
+                    <PlayerDeck this.state.allDominoes={this.state.allDominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={this.state.player1Deck} />
                 </div>
                 <button disabled={gameOver} onClick={() => this.getBankDomino()}>
                     Get domino from the bank

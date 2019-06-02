@@ -39,12 +39,16 @@ class GameRooms extends Component {
         }
     }
 
+    static gameStarted(game) {
+        return game.registered_users === game.players;
+    }
+
     deleteGame(game) {
         if (game.registered_users.length > 0) {
             alert('Unable to delete game - already have registered players');
             return;
         }
-        if (game.started) {
+        if (GameRooms.gameStarted(game)) {
             alert('Unable to delete game - game already started');
             return;
         }
@@ -84,12 +88,12 @@ class GameRooms extends Component {
                 {Object.keys(this.state.games).map((gamename) => {
                     const game = this.state.games[gamename];
                     const username = this.state.username;
-                    return <tr key={gamename} className={game.started ? 'activegame': ''}>
+                    return <tr key={gamename} className={GameRooms.gameStarted(game) ? 'activegame': ''}>
                         <td>{game.gamename}</td>
                         <td>{game.players}</td>
                         <td>{game.username}</td>
                         <td>{game.registered_users.join(',')}</td>
-                        <td>{!game.started && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
+                        <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
                         <td>{game.username === username && <button onClick={() => this.deleteGame(game)}>Delete</button>}</td>
                     </tr>})}
                 </tbody>
