@@ -166,7 +166,7 @@ class Game extends Component {
                 return;
             }
             let stateCopy = Object.assign({}, this.state);
-            delete stateCopy.valid_placements;
+            delete stateCopy.game.game_states[playerIndex].valid_placements;
             let boardDeepCopy = new Array(this.state.game.board.length);
             for (let i = 0; i < this.state.game.board.length; i++) {
                 boardDeepCopy[i] = new Array(this.state.game.board[i].length);
@@ -229,19 +229,22 @@ class Game extends Component {
     }
 
     getBankDomino() {
-        if (this.state.bank.length > 0) {
+        if (this.state.game.bank.length > 0) {
             const randBankDomino = this.state.game.bank[Math.floor(Math.random() * this.state.game.bank.length)];
-            let player1DeckCopy = this.state.player1Deck.concat(randBankDomino);
+            let playerDeckCopy = this.getGameState().player_deck.concat(randBankDomino);
             let stateCopy = Object.assign({}, this.state);
-            delete stateCopy.valid_placements;
-            plays.push(stateCopy);
+            delete stateCopy.game.game_states[playerIndex].valid_placements;
             this.setState({
-                player1Deck: player1DeckCopy,
+                player1Deck: playerDeckCopy,
                 bank: this.state.bank.filter((k) => k !== randBankDomino),
                 pieces_taken: this.state.pieces_taken + 1,
                 plays_count: this.state.plays_count + 1
             });
         }
+    }
+
+    isCurrentPlayerTurns() {
+        return this.state.game.player_turn === this.state.username;
     }
 
     resizeBoardIfNeeded(board) {
@@ -305,8 +308,8 @@ class Game extends Component {
 
     render() {
         const endResult = this.getEndResult();
-        const temp_mins = Math.floor(this.state.elapsed_time / 60);
-        const temp_secs = Math.floor(this.state.elapsed_time % 60);
+        const temp_mins = Math.floor(this.getGameState().elapsed_time / 60);
+        const temp_secs = Math.floor(this.getGameState().elapsed_time % 60);
         const mins = temp_mins < 10 ? '0' + temp_mins : temp_mins;
         const secs = temp_secs < 10 ? '0' + temp_secs : temp_secs;
         const avg = this.state.plays_count > 0 ? Math.floor(this.state.elapsed_time / this.state.plays_count) : 0;
@@ -317,21 +320,21 @@ class Game extends Component {
                 <div
                     onDragOver={(e) => Game.onDragOver(e)}
                     onDrop={(e) => this.onDrop(e)}>
-                    <Board this.state.allDominoes={this.state.allDominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board}/>
+                    <Board allDominoes={this.getGameState().allDominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board}/>
                 </div>
                 <h2>Player deck:</h2>
                 <div onDragOver={(e) => Game.onDragOver(e)}>
-                    <PlayerDeck this.state.allDominoes={this.state.allDominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={this.state.player1Deck} />
+                    <PlayerDeck allDominoes={this.getGameState().allDominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={this.getGameState().player_deck} />
                 </div>
-                <button disabled={gameOver} onClick={() => this.getBankDomino()}>
+                <button disabled={!this.isCurrentPlayerTurns} onClick={() => this.getBankDomino()}>
                     Get domino from the bank
                 </button>
                 <div className="statistics">
-                    <h4>Plays counter: {this.state.plays_count}</h4>
+                    <h4>Plays counter: {this.getGameState().plays_count}</h4>
                     <h4>Elapsed time: {mins + ':' + secs}</h4>
                     <h4>Average time: {avg + 's'}</h4>
-                    <h4>Pieces taken: {this.state.pieces_taken}</h4>
-                    <h4>Total score: {this.state.total_score}</h4>
+                    <h4>Pieces taken: {this.getGameState().pieces_taken}</h4>
+                    <h4>Total score: {this.getGameState().total_score}</h4>
                 </div>
                 <h3>{endResult}</h3>
             </div >
