@@ -32,8 +32,10 @@ class Game extends Component {
         return this.state.game.game_states[playerIndex];
     }
     
-    componentWillReceiveProps({games}) {
-        this.setState({...this.state, games});
+    componentWillReceiveProps({game}) {
+        if (!this.isCurrentPlayerTurns()) {
+            this.setState({game: game});
+        }
     }
 
     componentDidMount() {
@@ -203,15 +205,32 @@ class Game extends Component {
                 boardCopy[placement.x + 1][placement.y].direction = domino.direction;;
             }
             this.resizeBoardIfNeeded(boardCopy);
-            //TODO - update this
-            this.setState({
-                player1Deck: this.state.player1Deck.filter((k) => { return k !== idDropped.toString() }),
-                board: boardCopy,
-                plays_count: this.state.plays_count + 1,
-                valid_placements: [],
-                total_score: this.state.total_score + dots1 + dots2
-            });
+            this.updateGame(boardCopy, idDropped, dots1, dots2);
         }
+    }
+
+    updateGame(boardCopy, idDropped, dots1, dots2) {
+        let game = this.state.game;
+        let gameState = this.getGameState();
+        game.board = boardCopy;
+        gameState.player_deck = gameState.player_deck.filter((k) => {
+            return k !== idDropped.toString()
+        });
+        gameState.plays_count++;
+        gameState.valid_placements = [];
+        gameState.total_score += dots1 + dots2;
+        game.player_turn = this.getPlayerIndex() + 1 % game.players;
+        game.game_states[playerIndex] = gameState;
+        this.setState({game: game});
+        fetch('/updategame', {
+            method: 'POST',
+            body: JSON.stringify(game),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(res => res.json())
+            .then(response => console.log('Success:', JSON.stringify(response)))
+            .catch(error => alert('Error:' + error));
     }
 
     static onReset() {
@@ -229,22 +248,39 @@ class Game extends Component {
     }
 
     getBankDomino() {
-        if (this.state.game.bank.length > 0) {
-            const randBankDomino = this.state.game.bank[Math.floor(Math.random() * this.state.game.bank.length)];
-            let playerDeckCopy = this.getGameState().player_deck.concat(randBankDomino);
-            let stateCopy = Object.assign({}, this.state);
-            delete stateCopy.game.game_states[playerIndex].valid_placements;
-            this.setState({
-                player1Deck: playerDeckCopy,
-                bank: this.state.bank.filter((k) => k !== randBankDomino),
-                pieces_taken: this.state.pieces_taken + 1,
-                plays_count: this.state.plays_count + 1
-            });
-        }
+        let game = this.state.game;
+        let gameState = this.getGameState();
+        const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
+        gameState.player_deck.push(randBankDomino);
+        gameState.bank = gameState.bank.filter((k) => k !== randBankDomino);
+        gameState.plays_count++;
+        gameState.pieces_taken++;
+        gameState.valid_placements = [];
+        game.game_states[playerIndex] = gameState;
+        game.player_turn = this.getPlayerIndex() + 1 % game.players;
+        this.setState({game: game});
+        fetch('/updategame', {
+            method: 'POST',
+            body: JSON.stringify(game),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(res => res.json())
+            .then(response => console.log('Success:', JSON.stringify(response)))
+            .catch(error => alert('Error:' + error));
     }
 
     isCurrentPlayerTurns() {
-        return this.state.game.player_turn === this.state.username;
+        return this.state.game.registered_users[this.getPlayerIndex()] === this.state.username;
+    }
+
+    getPlayerIndex() {
+        for (let i = 0; i < this.state.game.players; i++) {
+            if (this.state.game.registered_users[i] === this.state.username) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     resizeBoardIfNeeded(board) {

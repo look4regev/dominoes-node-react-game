@@ -141,11 +141,26 @@ router.post('/creategame', function(req, res) {
         players: players,
         username: username,
         registered_users: [],
-        player_turn: '',
+        player_turn: 0,
         game_states: gameStates,
         board: getBoard(9, 9),
         bank: Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
     };
+    res.sendStatus(200);
+});
+
+router.post('/updategame', function(req, res) {
+    res.contentType('application/json');
+    const game = req.body.game;
+    if (!game) {
+        res.status(500).send({"error": "must provide game"});
+        return;
+    }
+    if (!game.gamename in games) {
+        res.status(500).send({ "error": "game does not exist" });
+        return;
+    }
+    games[game.gamename] = game;
     res.sendStatus(200);
 });
 
