@@ -50,7 +50,9 @@ class Dominoes extends Component {
                                                                            games={this.state.games}
                                                                            players={this.state.players}
                                                                            username={this.state.username} />}
-                {this.state.activeGame && <Game username={this.state.username} game={this.state.games[this.state.activeGame] }/>}
+                {this.state.activeGame && <Game sendGameData={this.getGameData}
+                                                username={this.state.username}
+                                                game={this.state.games[this.state.activeGame] }/>}
             </div>
         );
     }

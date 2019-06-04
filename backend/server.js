@@ -15,6 +15,16 @@ let games = {};
 
 const PlayerInitialDominoesCount = 6;
 
+const allDominoes = {
+    0:  { dot: 0,  direction: Left }, 1:  { dot: 1,  direction: Left }, 2:  { dot: 2,  direction: Left }, 3:  { dot: 3,  direction: Left }, 4:  { dot: 4,  direction: Left }, 5:  { dot: 5,  direction: Left }, 6:  { dot: 6,  direction: Left },
+    11: { dot: 11, direction: Left }, 12: { dot: 12, direction: Left }, 13: { dot: 13, direction: Left }, 14: { dot: 14, direction: Left }, 15: { dot: 15, direction: Left }, 16: { dot: 16 , direction: Left },
+    22: { dot: 22, direction: Left }, 23: { dot: 23, direction: Left }, 24: { dot: 24, direction: Left }, 25: { dot: 25, direction: Left }, 26: { dot: 26, direction: Left },
+    33: { dot: 33, direction: Left }, 34: { dot: 34, direction: Left }, 35: { dot: 35, direction: Left }, 36: { dot: 36, direction: Left },
+    44: { dot: 44, direction: Left }, 45: { dot: 45, direction: Left }, 46: { dot: 46, direction: Left },
+    55: { dot: 55, direction: Left }, 56: { dot: 56, direction: Left },
+    66: { dot: 66, direction: Left }
+};
+
 router.post('/signup', function(req, res) {
     res.contentType('application/json');
     const username = req.body.username;
@@ -114,30 +124,16 @@ router.post('/creategame', function(req, res) {
         res.status(500).send({ "error": "number of players must be either 2 or 3" });
         return;
     }
-    const allDominoes = {
-        0:  { dot: 0,  direction: Left }, 1:  { dot: 1,  direction: Left }, 2:  { dot: 2,  direction: Left }, 3:  { dot: 3,  direction: Left }, 4:  { dot: 4,  direction: Left }, 5:  { dot: 5,  direction: Left }, 6:  { dot: 6,  direction: Left },
-        11: { dot: 11, direction: Left }, 12: { dot: 12, direction: Left }, 13: { dot: 13, direction: Left }, 14: { dot: 14, direction: Left }, 15: { dot: 15, direction: Left }, 16: { dot: 16 , direction: Left },
-        22: { dot: 22, direction: Left }, 23: { dot: 23, direction: Left }, 24: { dot: 24, direction: Left }, 25: { dot: 25, direction: Left }, 26: { dot: 26, direction: Left },
-        33: { dot: 33, direction: Left }, 34: { dot: 34, direction: Left }, 35: { dot: 35, direction: Left }, 36: { dot: 36, direction: Left },
-        44: { dot: 44, direction: Left }, 45: { dot: 45, direction: Left }, 46: { dot: 46, direction: Left },
-        55: { dot: 55, direction: Left }, 56: { dot: 56, direction: Left },
-        66: { dot: 66, direction: Left }
-    };
-    const playerDecks = getPlayerDecks(players, allDominoes);
-    let usedDominoes = [];
-    for (let i = 0; i < players; i++) {
-        usedDominoes = usedDominoes.concat(playerDecks[i]);
-    }
     games[gamename] = {
         gamename: gamename,
         players: players,
         username: username,
         all_dominoes: allDominoes,
         registered_users: [],
-        player_turn: 0,
-        player_decks: playerDecks,
+        player_turn: -1,
+        player_decks: new Array(players),
         board: getBoard(9, 9),
-        bank: Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
+        bank: Object.keys(allDominoes)
     };
     res.sendStatus(200);
 });
@@ -217,6 +213,33 @@ router.post('/joingame', function(req, res) {
         return;
     }
     registeredUsers.push(username);
+    if (registeredUsers.length === game.players) {
+        game.player_turn = 0;
+        const playerDecks = getPlayerDecks(game.players, allDominoes);
+        let usedDominoes = [];
+        for (let i = 0; i < game.players; i++) {
+            usedDominoes = usedDominoes.concat(playerDecks[i]);
+        }
+        game.player_decks = playerDecks;
+        game.bank = Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
+    }
+    res.sendStatus(200);
+});
+
+router.post('/leavegame', function(req, res) {
+    res.contentType('application/json');
+    const username = req.body.username;
+    if (!username) {
+        res.status(500).send({ "error": "must provide username" });
+        return;
+    }
+    if (!usernames.includes(username)) {
+        res.status(500).send({ "error": "username not signed up" });
+        return;
+    }
+    Object.keys(games).map((gamename) => {
+        _.remove(games[gamename].registered_users, (el) => el === username);
+    });
     res.sendStatus(200);
 });
 

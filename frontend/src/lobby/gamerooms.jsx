@@ -14,7 +14,7 @@ class GameRooms extends Component {
     }
 
     componentWillReceiveProps({games}) {
-        this.setState({...this.state, games});
+        this.setState({games: games});
     }
 
     joinGame(game) {
@@ -40,7 +40,7 @@ class GameRooms extends Component {
     }
 
     static gameStarted(game) {
-        return game.registered_users === game.players;
+        return game.registered_users.length === game.players;
     }
 
     deleteGame(game) {

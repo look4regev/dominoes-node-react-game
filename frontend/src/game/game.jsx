@@ -10,7 +10,7 @@ export const Empty = -1;
 export const Separator = -2;
 
 let playerIndex = -1;
-let playerDeck = [];
+let playerDeck;
 
 class Game extends Component {
     constructor(props) {
@@ -22,17 +22,13 @@ class Game extends Component {
             valid_placements: [],
             pieces_taken: 0,
             total_score: 0,
-            elapsed_time: 0,
+            elapsed_time: 0
         };
-        for (let i = 0; i < this.state.game.players; i++) {
-            if (this.state.game.registered_users[i] === this.state.username) {
-                playerDeck = this.state.game.player_decks[i];
-                playerIndex = i;
-                break;
-            }
-        }
         this.getData = this.getData.bind(this);
         this.getDrag = this.getDrag.bind(this);
+        this.logout = this.logout.bind(this);
+        this.leaveRoom = this.leaveRoom.bind(this);
+        this.getGameData = this.getGameData.bind(this);
     }
 
     componentWillReceiveProps({game}) {
@@ -40,19 +36,84 @@ class Game extends Component {
     }
 
     componentDidMount() {
+        for (let i = 0; i < this.state.game.registered_users.length; i++) {
+            if (this.state.game.registered_users[i] === this.state.username) {
+                playerIndex = i;
+                break;
+            }
+        }
         this.interval = setInterval(() => {
-            this.setState({
-                elapsed_time: this.state.elapsed_time + 1}
-            );
+            if (this.state.game.players === this.state.game.registered_users.length && !playerDeck) {
+                playerDeck = this.state.game.player_decks[playerIndex];
+            }
+            if (this.isCurrentPlayerTurn()) {
+                this.setState({
+                        elapsed_time: this.state.elapsed_time + 1
+                    }
+                );
+            }
         }, 1000);
     }
 
     componentWillUnmount() {
         clearInterval(this.interval);
+        this.setState({
+                plays_count: 0,
+                valid_placements: [],
+                pieces_taken: 0,
+                total_score: 0,
+                elapsed_time: 0
+            }
+        );
+        playerDeck = [];
+    }
+
+    logout() {ge
+        const data = new URLSearchParams();
+        data.append('username', this.state.username);
+        fetch('/logout', {
+            method: 'post',
+            body: data
+        }).then(res => {
+            if (res.status === 200) {
+                window.location.reload();
+            } else {
+                return res.json();
+            }
+        }).then(jsonData => {
+            if (jsonData) {
+                alert(jsonData.error);
+            }
+        });
+    }
+
+    getGameData(gamename) {
+        this.props.sendGameData(gamename);
+    }
+
+    leaveRoom() {
+        const data = new URLSearchParams();
+        data.append('username', this.state.username);
+        fetch('/leavegame', {
+            method: 'post',
+            body: data
+        }).then(res => {
+            if (res.status === 200) {
+                this.getGameData('');
+            } else {
+                return res.json();
+            }
+        }).then(jsonData => {
+            if (jsonData) {
+                alert(jsonData.error);
+            }
+        });
     }
 
     getData(val) {
-        this.state.game.all_dominoes[val.dot].direction = val.direction;
+        let game = this.state.game;
+        game.all_dominoes[val.dot].direction = val.direction;
+        this.setState({game: game});
     }
 
     getDrag(val) {
@@ -162,7 +223,7 @@ class Game extends Component {
 
     onDrop(ev) {
         ev.preventDefault();
-        if (ev.target.id && this.isCurrentPlayerTurns()) {
+        if (ev.target.id && this.isCurrentPlayerTurn()) {
             let game = this.state.game;
             const placement = { 'x': parseInt(ev.target.id.split(',')[0]), 'y': parseInt(ev.target.id.split(',')[1]) };
             const idDropped = parseInt(ev.dataTransfer.getData('id'));
@@ -201,7 +262,7 @@ class Game extends Component {
             playerDeck = playerDeck.filter((k) => {
                 return k !== idDropped.toString()
             });
-            game.player_turn = this.getPlayerIndex() + 1 % game.players;
+            game.player_turn = playerIndex + 1 % game.players;
             this.setState({
                 game: game,
                 plays_count: this.state.plays_count + 1,
@@ -241,41 +302,30 @@ class Game extends Component {
     }
 
     getBankDomino() {
-        if (this.isCurrentPlayerTurns()) {
-            let game = this.state.game;
-            const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
-            playerDeck.push(randBankDomino);
-            game.bank = game.bank.filter((k) => k !== randBankDomino);
-            game.player_turn = this.getPlayerIndex() + 1 % game.players;
-            this.setState({
-                game: game,
-                plays_count: this.state.plays_count + 1,
-                pieces_taken: this.state.pieces_taken + 1,
-                valid_placements: []
-            });
-            fetch('/updategame', {
-                method: 'POST',
-                body: JSON.stringify(game),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).then(res => res.json())
-                .then(response => console.log('Success:', JSON.stringify(response)))
-                .catch(error => alert('Error:' + error));
-        }
-    }
-
-    isCurrentPlayerTurns() {
-        return this.state.game.registered_users[this.getPlayerIndex()] === this.state.username;
-    }
-
-    getPlayerIndex() {
-        for (let i = 0; i < this.state.game.players; i++) {
-            if (this.state.game.registered_users[i] === this.state.username) {
-                return i;
+        let game = this.state.game;
+        const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
+        playerDeck.push(randBankDomino);
+        game.bank = game.bank.filter((k) => k !== randBankDomino);
+        game.player_turn = playerIndex + 1 % game.players;
+        this.setState({
+            game: game,
+            plays_count: this.state.plays_count + 1,
+            pieces_taken: this.state.pieces_taken + 1,
+            valid_placements: []
+        });
+        fetch('/updategame', {
+            method: 'POST',
+            body: JSON.stringify(game),
+            headers: {
+                'Content-Type': 'application/json'
             }
-        }
-        return -1;
+        }).then(res => res.json())
+            .then(response => console.log('Success:', JSON.stringify(response)))
+            .catch(error => alert('Error:' + error));
+    }
+
+    isCurrentPlayerTurn() {
+        return this.state.game.player_turn === playerIndex;
     }
 
     resizeBoardIfNeeded(board) {
@@ -339,6 +389,7 @@ class Game extends Component {
 
     render() {
         const endResult = this.getEndResult();
+        const missingPlayers = this.state.game.players - this.state.game.registered_users.length;
         const temp_mins = Math.floor(this.state.elapsed_time / 60);
         const temp_secs = Math.floor(this.state.elapsed_time % 60);
         const mins = temp_mins < 10 ? '0' + temp_mins : temp_mins;
@@ -347,6 +398,16 @@ class Game extends Component {
         return (
             <div>
                 <h1>Dominoes <img src={ImageHeadline} alt='dominoesheader' /> Game!</h1>
+                <button disabled={missingPlayers === 0} onClick={this.logout}>Logout</button>
+                <button disabled={missingPlayers === 0} onClick={this.leaveRoom}>Leave Room</button>
+                <div className="players">
+                    {missingPlayers === 0 && (
+                        <h2>Player {this.state.game.player_turn + 1}'s turn</h2>
+                    )}
+                    {missingPlayers > 0 && (
+                        <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
+                    )}
+                </div>
                 <h2>Board:</h2>
                 <div
                     onDragOver={(e) => Game.onDragOver(e)}
@@ -357,7 +418,7 @@ class Game extends Component {
                 <div onDragOver={(e) => Game.onDragOver(e)}>
                     <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerDeck} />
                 </div>
-                <button disabled={!this.isCurrentPlayerTurns} onClick={() => this.getBankDomino()}>
+                <button disabled={!this.isCurrentPlayerTurn} onClick={() => this.getBankDomino()}>
                     Get domino from the bank
                 </button>
                 <div className="statistics">
