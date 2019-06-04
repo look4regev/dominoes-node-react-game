@@ -1,5 +1,5 @@
-import {Left} from "../frontend/src/game/domino/halfDomino";
-import {Empty} from "../frontend/src/game/game";
+const Left = 0;
+const Empty = -1;
 
 let express = require('express');
 let router = express.Router();
@@ -140,7 +140,7 @@ router.post('/creategame', function(req, res) {
 
 router.post('/updategame', function(req, res) {
     res.contentType('application/json');
-    const game = req.body.game;
+    const game = req.body;
     if (!game) {
         res.status(500).send({"error": "must provide game"});
         return;
@@ -213,6 +213,7 @@ router.post('/joingame', function(req, res) {
         return;
     }
     registeredUsers.push(username);
+    game.registered_users = registeredUsers;
     if (registeredUsers.length === game.players) {
         game.player_turn = 0;
         const playerDecks = getPlayerDecks(game.players, allDominoes);
@@ -223,6 +224,7 @@ router.post('/joingame', function(req, res) {
         game.player_decks = playerDecks;
         game.bank = Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
     }
+    games[gamename] = game;
     res.sendStatus(200);
 });
 

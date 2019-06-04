@@ -63,7 +63,10 @@ class Lobby extends Component {
     }
 
     componentWillReceiveProps({games, players}) {
-        this.setState({...this.state, games, players});
+        this.setState({
+            games: games,
+            players: players
+        });
     }
 
     createGame() {

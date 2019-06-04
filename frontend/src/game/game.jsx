@@ -9,8 +9,9 @@ import { Left, Right, Up, Down } from "./domino/halfDomino.jsx";
 export const Empty = -1;
 export const Separator = -2;
 
-let playerIndex = -1;
-let playerDeck;
+let playerIndex = -2;
+let playerDeck = [];
+let deckFilled = false;
 
 class Game extends Component {
     constructor(props) {
@@ -35,16 +36,29 @@ class Game extends Component {
         this.setState({game: game});
     }
 
-    componentDidMount() {
+    isGameInProgress() {
+        return this.state.game.players === this.state.game.registered_users.length;
+    }
+
+    fillDeck() {
+        playerDeck = this.state.game.player_decks[playerIndex];
+        deckFilled = true;
+    }
+
+    findPlayerIndex() {
         for (let i = 0; i < this.state.game.registered_users.length; i++) {
             if (this.state.game.registered_users[i] === this.state.username) {
-                playerIndex = i;
-                break;
+                return i;
             }
         }
+        return -2;
+    }
+
+    componentDidMount() {
         this.interval = setInterval(() => {
-            if (this.state.game.players === this.state.game.registered_users.length && !playerDeck) {
-                playerDeck = this.state.game.player_decks[playerIndex];
+            playerIndex = this.findPlayerIndex();
+            if (this.isGameInProgress() && !deckFilled && playerIndex >= 0) {
+                this.fillDeck();
             }
             if (this.isCurrentPlayerTurn()) {
                 this.setState({
@@ -66,9 +80,11 @@ class Game extends Component {
             }
         );
         playerDeck = [];
+        deckFilled = false;
+        playerIndex = -2;
     }
 
-    logout() {ge
+    logout() {
         const data = new URLSearchParams();
         data.append('username', this.state.username);
         fetch('/logout', {
@@ -117,9 +133,11 @@ class Game extends Component {
     }
 
     getDrag(val) {
-        this.setState({
-            valid_placements: val ? this.getValidPlacements(this.state.game.all_dominoes[val]) : [],
-        });
+        if (this.isCurrentPlayerTurn()) {
+            this.setState({
+                valid_placements: val ? this.getValidPlacements(this.state.game.all_dominoes[val]) : [],
+            });
+        }
     }
 
     static onDragOver(ev) {
@@ -269,20 +287,18 @@ class Game extends Component {
                 valid_placements: [],
                 total_score: this.state.total_score + dots1 + dots2
             });
-            this.notifyGame(game);
+            Game.notifyGame(game);
         }
     }
 
-    notifyGame(game) {
+    static notifyGame(game) {
         fetch('/updategame', {
             method: 'POST',
             body: JSON.stringify(game),
             headers: {
                 'Content-Type': 'application/json'
             }
-        }).then(res => res.json())
-            .then(response => console.log('Success:', JSON.stringify(response)))
-            .catch(error => alert('Error:' + error));
+        });
     }
 
     static onReset() {
@@ -290,7 +306,7 @@ class Game extends Component {
     }
 
     getEndResult() {
-        if (playerDeck.length === 0) {
+        if (this.isGameInProgress() && deckFilled && playerDeck.length === 0) {
             clearInterval(this.interval);
             //TODO - notify win
             return "Player wins!";
@@ -313,15 +329,7 @@ class Game extends Component {
             pieces_taken: this.state.pieces_taken + 1,
             valid_placements: []
         });
-        fetch('/updategame', {
-            method: 'POST',
-            body: JSON.stringify(game),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }).then(res => res.json())
-            .then(response => console.log('Success:', JSON.stringify(response)))
-            .catch(error => alert('Error:' + error));
+        Game.notifyGame(game);
     }
 
     isCurrentPlayerTurn() {
@@ -389,6 +397,7 @@ class Game extends Component {
 
     render() {
         const endResult = this.getEndResult();
+        const currentPlayersTurn = this.isCurrentPlayerTurn();
         const missingPlayers = this.state.game.players - this.state.game.registered_users.length;
         const temp_mins = Math.floor(this.state.elapsed_time / 60);
         const temp_secs = Math.floor(this.state.elapsed_time % 60);
@@ -398,10 +407,13 @@ class Game extends Component {
         return (
             <div>
                 <h1>Dominoes <img src={ImageHeadline} alt='dominoesheader' /> Game!</h1>
+                <div className="players">
                 <button disabled={missingPlayers === 0} onClick={this.logout}>Logout</button>
                 <button disabled={missingPlayers === 0} onClick={this.leaveRoom}>Leave Room</button>
-                <div className="players">
-                    {missingPlayers === 0 && (
+                    {this.isCurrentPlayerTurn() && (
+                        <h2>Your turn</h2>
+                    )}
+                    {missingPlayers === 0 && !this.isCurrentPlayerTurn() && (
                         <h2>Player {this.state.game.player_turn + 1}'s turn</h2>
                     )}
                     {missingPlayers > 0 && (
@@ -418,7 +430,7 @@ class Game extends Component {
                 <div onDragOver={(e) => Game.onDragOver(e)}>
                     <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerDeck} />
                 </div>
-                <button disabled={!this.isCurrentPlayerTurn} onClick={() => this.getBankDomino()}>
+                <button disabled={!currentPlayersTurn} onClick={() => this.getBankDomino()}>
                     Get domino from the bank
                 </button>
                 <div className="statistics">

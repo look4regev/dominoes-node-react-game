@@ -49,3 +49,7 @@ button[disabled]{
   display: inline;
   padding: 5px;
 }
+
+.players {
+  display: inline;
+}

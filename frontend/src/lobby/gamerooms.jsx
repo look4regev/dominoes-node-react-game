@@ -20,7 +20,7 @@ class GameRooms extends Component {
     joinGame(game) {
         if (window.confirm('Are you sure you want to join the game?')) {
             const data = new URLSearchParams();
-            data.append('username', game.username);
+            data.append('username', this.state.username);
             data.append('gamename', game.gamename);
             fetch('/joingame', {
                 method: 'post',
