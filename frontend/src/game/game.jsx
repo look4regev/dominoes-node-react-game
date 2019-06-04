@@ -10,16 +10,23 @@ export const Empty = -1;
 export const Separator = -2;
 
 let playerIndex = -1;
+let playerDeck = [];
 
 class Game extends Component {
     constructor(props) {
         super(props);
         this.state = {
             game: this.props.game,
-            username: this.props.username
+            username: this.props.username,
+            plays_count: 0,
+            valid_placements: [],
+            pieces_taken: 0,
+            total_score: 0,
+            elapsed_time: 0,
         };
         for (let i = 0; i < this.state.game.players; i++) {
             if (this.state.game.registered_users[i] === this.state.username) {
+                playerDeck = this.state.game.player_decks[i];
                 playerIndex = i;
                 break;
             }
@@ -28,20 +35,14 @@ class Game extends Component {
         this.getDrag = this.getDrag.bind(this);
     }
 
-    getGameState() {
-        return this.state.game.game_states[playerIndex];
-    }
-    
     componentWillReceiveProps({game}) {
-        if (!this.isCurrentPlayerTurns()) {
-            this.setState({game: game});
-        }
+        this.setState({game: game});
     }
 
     componentDidMount() {
         this.interval = setInterval(() => {
             this.setState({
-                elapsed_time: this.getGameState().elapsed_time + 1}
+                elapsed_time: this.state.elapsed_time + 1}
             );
         }, 1000);
     }
@@ -51,12 +52,12 @@ class Game extends Component {
     }
 
     getData(val) {
-        this.getGameState().allDominoes[val.dot].direction = val.direction;
+        this.state.game.all_dominoes[val.dot].direction = val.direction;
     }
 
     getDrag(val) {
         this.setState({
-            valid_placements: val ? this.getValidPlacements(this.getGameState().allDominoes[val]) : [],
+            valid_placements: val ? this.getValidPlacements(this.state.game.all_dominoes[val]) : [],
         });
     }
 
@@ -161,25 +162,16 @@ class Game extends Component {
 
     onDrop(ev) {
         ev.preventDefault();
-        if (ev.target.id) {
+        if (ev.target.id && this.isCurrentPlayerTurns()) {
+            let game = this.state.game;
             const placement = { 'x': parseInt(ev.target.id.split(',')[0]), 'y': parseInt(ev.target.id.split(',')[1]) };
             const idDropped = parseInt(ev.dataTransfer.getData('id'));
-            if (!this.isValidPlacement(this.getGameState().allDominoes[idDropped], placement)) {
+            if (!this.isValidPlacement(game.all_dominoes[idDropped], placement)) {
                 return;
             }
-            let stateCopy = Object.assign({}, this.state);
-            delete stateCopy.game.game_states[playerIndex].valid_placements;
-            let boardDeepCopy = new Array(this.state.game.board.length);
-            for (let i = 0; i < this.state.game.board.length; i++) {
-                boardDeepCopy[i] = new Array(this.state.game.board[i].length);
-                for (let j = 0; j < this.state.game.board[i].length; j++) {
-                    boardDeepCopy[i][j] = { dot: this.state.game.board[i][j].dot, direction: this.state.game.board[i][j].direction };
-                }
-            }
-            stateCopy.board = boardDeepCopy;
-            const domino = this.getGameState().allDominoes[idDropped];
-            this.getGameState().allDominoes[idDropped].placement = placement;
-            let boardCopy = this.state.game.board;
+            const domino = game.all_dominoes[idDropped];
+            game.all_dominoes[idDropped].placement = placement;
+            let boardCopy = game.board;
             let dots1;
             let dots2;
             if (domino.direction === Left || domino.direction === Up) {
@@ -198,30 +190,29 @@ class Game extends Component {
                 boardCopy[placement.x][placement.y + 1].direction = domino.direction;
             } else {
                 boardCopy[placement.x - 1][placement.y].dot = dots1;
-                boardCopy[placement.x - 1][placement.y].direction = domino.direction;;
+                boardCopy[placement.x - 1][placement.y].direction = domino.direction;
                 boardCopy[placement.x][placement.y].dot = Separator;
-                boardCopy[placement.x][placement.y].direction = domino.direction;;
+                boardCopy[placement.x][placement.y].direction = domino.direction;
                 boardCopy[placement.x + 1][placement.y].dot = dots2;
-                boardCopy[placement.x + 1][placement.y].direction = domino.direction;;
+                boardCopy[placement.x + 1][placement.y].direction = domino.direction;
             }
             this.resizeBoardIfNeeded(boardCopy);
-            this.updateGame(boardCopy, idDropped, dots1, dots2);
+            game.board = boardCopy;
+            playerDeck = playerDeck.filter((k) => {
+                return k !== idDropped.toString()
+            });
+            game.player_turn = this.getPlayerIndex() + 1 % game.players;
+            this.setState({
+                game: game,
+                plays_count: this.state.plays_count + 1,
+                valid_placements: [],
+                total_score: this.state.total_score + dots1 + dots2
+            });
+            this.notifyGame(game);
         }
     }
 
-    updateGame(boardCopy, idDropped, dots1, dots2) {
-        let game = this.state.game;
-        let gameState = this.getGameState();
-        game.board = boardCopy;
-        gameState.player_deck = gameState.player_deck.filter((k) => {
-            return k !== idDropped.toString()
-        });
-        gameState.plays_count++;
-        gameState.valid_placements = [];
-        gameState.total_score += dots1 + dots2;
-        game.player_turn = this.getPlayerIndex() + 1 % game.players;
-        game.game_states[playerIndex] = gameState;
-        this.setState({game: game});
+    notifyGame(game) {
         fetch('/updategame', {
             method: 'POST',
             body: JSON.stringify(game),
@@ -238,36 +229,40 @@ class Game extends Component {
     }
 
     getEndResult() {
-        if (this.state.game.player_deck.length === 0) {
+        if (playerDeck.length === 0) {
             clearInterval(this.interval);
+            //TODO - notify win
             return "Player wins!";
         } else if (this.state.game.bank.length === 0) {
+            //TODO - notify loss
             clearInterval(this.interval);
             return "Player loses!"
         }
     }
 
     getBankDomino() {
-        let game = this.state.game;
-        let gameState = this.getGameState();
-        const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
-        gameState.player_deck.push(randBankDomino);
-        gameState.bank = gameState.bank.filter((k) => k !== randBankDomino);
-        gameState.plays_count++;
-        gameState.pieces_taken++;
-        gameState.valid_placements = [];
-        game.game_states[playerIndex] = gameState;
-        game.player_turn = this.getPlayerIndex() + 1 % game.players;
-        this.setState({game: game});
-        fetch('/updategame', {
-            method: 'POST',
-            body: JSON.stringify(game),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }).then(res => res.json())
-            .then(response => console.log('Success:', JSON.stringify(response)))
-            .catch(error => alert('Error:' + error));
+        if (this.isCurrentPlayerTurns()) {
+            let game = this.state.game;
+            const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
+            playerDeck.push(randBankDomino);
+            game.bank = game.bank.filter((k) => k !== randBankDomino);
+            game.player_turn = this.getPlayerIndex() + 1 % game.players;
+            this.setState({
+                game: game,
+                plays_count: this.state.plays_count + 1,
+                pieces_taken: this.state.pieces_taken + 1,
+                valid_placements: []
+            });
+            fetch('/updategame', {
+                method: 'POST',
+                body: JSON.stringify(game),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(res => res.json())
+                .then(response => console.log('Success:', JSON.stringify(response)))
+                .catch(error => alert('Error:' + error));
+        }
     }
 
     isCurrentPlayerTurns() {
@@ -344,8 +339,8 @@ class Game extends Component {
 
     render() {
         const endResult = this.getEndResult();
-        const temp_mins = Math.floor(this.getGameState().elapsed_time / 60);
-        const temp_secs = Math.floor(this.getGameState().elapsed_time % 60);
+        const temp_mins = Math.floor(this.state.elapsed_time / 60);
+        const temp_secs = Math.floor(this.state.elapsed_time % 60);
         const mins = temp_mins < 10 ? '0' + temp_mins : temp_mins;
         const secs = temp_secs < 10 ? '0' + temp_secs : temp_secs;
         const avg = this.state.plays_count > 0 ? Math.floor(this.state.elapsed_time / this.state.plays_count) : 0;
@@ -356,21 +351,21 @@ class Game extends Component {
                 <div
                     onDragOver={(e) => Game.onDragOver(e)}
                     onDrop={(e) => this.onDrop(e)}>
-                    <Board allDominoes={this.getGameState().allDominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board}/>
+                    <Board allDominoes={this.state.game.all_dominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board}/>
                 </div>
                 <h2>Player deck:</h2>
                 <div onDragOver={(e) => Game.onDragOver(e)}>
-                    <PlayerDeck allDominoes={this.getGameState().allDominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={this.getGameState().player_deck} />
+                    <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerDeck} />
                 </div>
                 <button disabled={!this.isCurrentPlayerTurns} onClick={() => this.getBankDomino()}>
                     Get domino from the bank
                 </button>
                 <div className="statistics">
-                    <h4>Plays counter: {this.getGameState().plays_count}</h4>
+                    <h4>Plays counter: {this.state.plays_count}</h4>
                     <h4>Elapsed time: {mins + ':' + secs}</h4>
                     <h4>Average time: {avg + 's'}</h4>
-                    <h4>Pieces taken: {this.getGameState().pieces_taken}</h4>
-                    <h4>Total score: {this.getGameState().total_score}</h4>
+                    <h4>Pieces taken: {this.state.pieces_taken}</h4>
+                    <h4>Total score: {this.state.total_score}</h4>
                 </div>
                 <h3>{endResult}</h3>
             </div >
