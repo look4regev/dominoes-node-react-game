@@ -129,7 +129,7 @@ class Game extends Component {
     getData(val) {
         let game = this.state.game;
         game.all_dominoes[val.dot].direction = val.direction;
-        this.setState({game: game});
+        Game.notifyGame(game);
     }
 
     getDrag(val) {
@@ -157,12 +157,23 @@ class Game extends Component {
         return validPlacements;
     }
 
+    isBoardEmpty() {
+        for (let i = 0; i < this.state.game.board.length; i++) {
+            for (let j = 0; j < this.state.game.board[i].length; j++) {
+                if (this.state.game.board[i][j].dot !== Empty) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     isValidPlacement(domino, placement) {
         const x = parseInt(placement.x);
         const y = parseInt(placement.y);
         const num_rows = this.state.game.board.length;
         const num_cols = this.state.game.board[0].length;
-        if (this.state.total_score === 0) {
+        if (this.isBoardEmpty()) {
             return x < num_rows - 1 && x > 0 && y < num_cols - 1 && y > 0;
         }
         let dots1 = Math.floor(domino.dot / 10);
@@ -170,6 +181,7 @@ class Game extends Component {
         if (domino.direction === Left || domino.direction === Right) {
             //if already occupied
             if (this.state.game.board[x][y].dot !== Empty || this.state.game.board[x][Math.max(0, y - 1)].dot !== Empty || this.state.game.board[x][Math.min(num_cols - 1, y + 1)].dot !== Empty) {
+                console.log('here1');
                 return false;
             }
             if (domino.direction === Right) {
@@ -204,6 +216,7 @@ class Game extends Component {
         } else {
             //if already occupied
             if (this.state.game.board[x][y].dot !== Empty || this.state.game.board[Math.max(0, x - 1)][y].dot !== Empty || this.state.game.board[Math.min(num_rows - 1, x + 1)][y].dot !== Empty) {
+                console.log('here2');
                 return false;
             }
             if (domino.direction === Down) {
@@ -236,6 +249,7 @@ class Game extends Component {
                 return true;
             }
         }
+        console.log('here3');
         return false;
     }
 
@@ -249,7 +263,6 @@ class Game extends Component {
                 return;
             }
             const domino = game.all_dominoes[idDropped];
-            game.all_dominoes[idDropped].placement = placement;
             let boardCopy = game.board;
             let dots1;
             let dots2;
@@ -276,18 +289,20 @@ class Game extends Component {
                 boardCopy[placement.x + 1][placement.y].direction = domino.direction;
             }
             this.resizeBoardIfNeeded(boardCopy);
-            game.board = boardCopy;
             playerDeck = playerDeck.filter((k) => {
                 return k !== idDropped.toString()
             });
-            game.player_turn = playerIndex + 1 % game.players;
+            let value = game.all_dominoes[idDropped];
+            value.placement = placement;
+            game.all_dominoes[idDropped] = value;
+            game.board = boardCopy;
+            game.player_turn = (playerIndex + 1) % game.players;
+            Game.notifyGame(game);
             this.setState({
-                game: game,
-                plays_count: this.state.plays_count + 1,
                 valid_placements: [],
+                plays_count: this.state.plays_count + 1,
                 total_score: this.state.total_score + dots1 + dots2
             });
-            Game.notifyGame(game);
         }
     }
 
@@ -322,14 +337,13 @@ class Game extends Component {
         const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
         playerDeck.push(randBankDomino);
         game.bank = game.bank.filter((k) => k !== randBankDomino);
-        game.player_turn = playerIndex + 1 % game.players;
+        game.player_turn = (playerIndex + 1) % game.players;
+        Game.notifyGame(game);
         this.setState({
-            game: game,
             plays_count: this.state.plays_count + 1,
             pieces_taken: this.state.pieces_taken + 1,
             valid_placements: []
         });
-        Game.notifyGame(game);
     }
 
     isCurrentPlayerTurn() {
@@ -408,6 +422,9 @@ class Game extends Component {
             <div>
                 <h1>Dominoes <img src={ImageHeadline} alt='dominoesheader' /> Game!</h1>
                 <div className="players">
+                    {playerIndex >= 0 && (
+                        <h2>Player {playerIndex + 1}</h2>
+                    )}
                 <button disabled={missingPlayers === 0} onClick={this.logout}>Logout</button>
                 <button disabled={missingPlayers === 0} onClick={this.leaveRoom}>Leave Room</button>
                     {this.isCurrentPlayerTurn() && (
@@ -419,6 +436,10 @@ class Game extends Component {
                     {missingPlayers > 0 && (
                         <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
                     )}
+                    <h4>Players in Game</h4>
+                    {this.state.game.registered_users.map((player) => (
+                        <li key={player}>{player}</li>
+                    ))}
                 </div>
                 <h2>Board:</h2>
                 <div
