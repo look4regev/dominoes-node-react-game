@@ -181,7 +181,6 @@ class Game extends Component {
         if (domino.direction === Left || domino.direction === Right) {
             //if already occupied
             if (this.state.game.board[x][y].dot !== Empty || this.state.game.board[x][Math.max(0, y - 1)].dot !== Empty || this.state.game.board[x][Math.min(num_cols - 1, y + 1)].dot !== Empty) {
-                console.log('here1');
                 return false;
             }
             if (domino.direction === Right) {
@@ -216,7 +215,6 @@ class Game extends Component {
         } else {
             //if already occupied
             if (this.state.game.board[x][y].dot !== Empty || this.state.game.board[Math.max(0, x - 1)][y].dot !== Empty || this.state.game.board[Math.min(num_rows - 1, x + 1)][y].dot !== Empty) {
-                console.log('here2');
                 return false;
             }
             if (domino.direction === Down) {
@@ -249,7 +247,6 @@ class Game extends Component {
                 return true;
             }
         }
-        console.log('here3');
         return false;
     }
 
