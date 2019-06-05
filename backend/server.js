@@ -228,6 +228,37 @@ router.post('/joingame', function(req, res) {
     res.sendStatus(200);
 });
 
+router.post('/singlegame', function(req, res) {
+    res.contentType('application/json');
+    const username = req.body.username;
+    if (!username) {
+        res.status(500).send({ "error": "must provide username" });
+        return;
+    }
+    if (!usernames.includes(username)) {
+        res.status(500).send({ "error": "username not signed up" });
+        return;
+    }
+    const gamename = req.body.gamename;
+    if (!gamename) {
+        res.status(500).send({ "error": "must provide game name" });
+        return;
+    }
+    if (!gamename in games) {
+        res.status(500).send({ "error": "game does not exist" });
+        return;
+    }
+    let game = games[gamename];
+    game.registered_users = [username];
+    game.players = 1;
+    game.player_turn = 0;
+    const playerDecks = getPlayerDecks(game.players, allDominoes);
+    game.player_decks = [playerDecks[0]];
+    game.bank = Object.keys(allDominoes).filter((k) => !playerDecks[0].includes(k));
+    games[gamename] = game;
+    res.sendStatus(200);
+});
+
 router.post('/leavegame', function(req, res) {
     res.contentType('application/json');
     const username = req.body.username;
@@ -264,6 +295,7 @@ router.get('/games', function(req, res) {
     res.contentType('application/json');
     const gamename = req.query.gamename;
     if (!gamename) {
+        // res.send(_.filter(games, (game) => !game.gamename.includes(SingleGameSuffix)));
         res.send(games);
         return;
     }

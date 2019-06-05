@@ -10,6 +10,7 @@ class GameRooms extends Component {
             username: this.props.username
         };
         this.joinGame = this.joinGame.bind(this);
+        this.singleGame = this.singleGame.bind(this);
         this.deleteGame = this.deleteGame.bind(this);
     }
 
@@ -23,6 +24,28 @@ class GameRooms extends Component {
             data.append('username', this.state.username);
             data.append('gamename', game.gamename);
             fetch('/joingame', {
+                method: 'post',
+                body: data
+            }).then(res => {
+                if (res.status === 200) {
+                    this.props.sendGameData(game.gamename);
+                } else {
+                    return res.json();
+                }
+            }).then(jsonData => {
+                if (jsonData) {
+                    alert(jsonData.error);
+                }
+            });
+        }
+    }
+
+    singleGame(game) {
+        if (window.confirm('Are you sure you want to play as single game?')) {
+            const data = new URLSearchParams();
+            data.append('username', this.state.username);
+            data.append('gamename', game.gamename);
+            fetch('/singlegame', {
                 method: 'post',
                 body: data
             }).then(res => {
@@ -94,6 +117,7 @@ class GameRooms extends Component {
                         <td>{game.username}</td>
                         <td>{game.registered_users.join(',')}</td>
                         <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
+                        <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.singleGame(game)}>Single Game</button>}</td>
                         <td>{game.username === username && <button onClick={() => this.deleteGame(game)}>Delete</button>}</td>
                     </tr>})}
                 </tbody>
