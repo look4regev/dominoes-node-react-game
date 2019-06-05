@@ -451,20 +451,10 @@ class Game extends Component {
                     {missingPlayers > 0 && (
                         <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
                     )}
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>Player</th>
-                            <th>Play Count</th>
-                            <th>Pieces Taken</th>
-                            <th>Total Score</th>
-                            <th>Ekapsed Time</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {this.createStatisticsTable()}
-                        </tbody>
-                    </table>
+                    <h4>Players in Game</h4>
+                    {this.state.game.registered_users.map((player) => (
+                        <li key={player}>{player}</li>
+                    ))}
                 </div>
                 <h2>Board:</h2>
                 <div
