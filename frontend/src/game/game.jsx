@@ -429,7 +429,7 @@ class Game extends Component {
         const currentPlayersTurn = this.isCurrentPlayerTurn();
         const missingPlayers = this.state.game.players - this.state.game.registered_users.length;
         const temp_mins = Math.floor(statistics.elapsed_time / 60);
-        const temp_secs = Math.floor(this.state.elapsed_time % 60);
+        const temp_secs = Math.floor(statistics.elapsed_time % 60);
         const mins = temp_mins < 10 ? '0' + temp_mins : temp_mins;
         const secs = temp_secs < 10 ? '0' + temp_secs : temp_secs;
         const avg = statistics.plays_count > 0 ? Math.floor(statistics.elapsed_time / statistics.plays_count) : 0;
