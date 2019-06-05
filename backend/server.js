@@ -132,6 +132,7 @@ router.post('/creategame', function(req, res) {
         registered_users: [],
         player_turn: -1,
         player_decks: new Array(players),
+        statistics: new Array(players),
         board: getBoard(9, 9),
         bank: Object.keys(allDominoes)
     };
@@ -186,6 +187,19 @@ router.post('/deletegame', function(req, res) {
     res.sendStatus(200);
 });
 
+function getPlayerStatistics(players) {
+    statistics = [];
+    for (let i = 0; i < players; i++) {
+        statistics.push({
+            plays_count: 0,
+            pieces_taken: 0,
+            total_score: 0,
+            elapsed_time: 0
+        });
+    }
+    return statistics;
+}
+
 router.post('/joingame', function(req, res) {
     res.contentType('application/json');
     const username = req.body.username;
@@ -217,11 +231,13 @@ router.post('/joingame', function(req, res) {
     if (registeredUsers.length === game.players) {
         game.player_turn = 0;
         const playerDecks = getPlayerDecks(game.players, allDominoes);
+        const statistics = getPlayerStatistics(game.players);
         let usedDominoes = [];
         for (let i = 0; i < game.players; i++) {
             usedDominoes = usedDominoes.concat(playerDecks[i]);
         }
         game.player_decks = playerDecks;
+        game.statistics = statistics;
         game.bank = Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
     }
     games[gamename] = game;
@@ -253,7 +269,8 @@ router.post('/singlegame', function(req, res) {
     game.players = 1;
     game.player_turn = 0;
     const playerDecks = getPlayerDecks(game.players, allDominoes);
-    game.player_decks = [playerDecks[0]];
+    game.player_decks = playerDecks;
+    game.statistics = getPlayerStatistics(game.players);
     game.bank = Object.keys(allDominoes).filter((k) => !playerDecks[0].includes(k));
     games[gamename] = game;
     res.sendStatus(200);

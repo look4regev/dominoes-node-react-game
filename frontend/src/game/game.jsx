@@ -19,11 +19,7 @@ class Game extends Component {
         this.state = {
             game: this.props.game,
             username: this.props.username,
-            plays_count: 0,
-            valid_placements: [],
-            pieces_taken: 0,
-            total_score: 0,
-            elapsed_time: 0
+            valid_placements: []
         };
         this.getData = this.getData.bind(this);
         this.getDrag = this.getDrag.bind(this);
@@ -61,10 +57,9 @@ class Game extends Component {
                 this.fillDeck();
             }
             if (this.isCurrentPlayerTurn()) {
-                this.setState({
-                        elapsed_time: this.state.elapsed_time + 1
-                    }
-                );
+                let game = this.state.game;
+                game.statistics[playerIndex].elapsed_time++;
+                Game.notifyGame(game);
             }
         }, 1000);
     }
@@ -72,11 +67,7 @@ class Game extends Component {
     componentWillUnmount() {
         clearInterval(this.interval);
         this.setState({
-                plays_count: 0,
-                valid_placements: [],
-                pieces_taken: 0,
-                total_score: 0,
-                elapsed_time: 0
+                valid_placements: []
             }
         );
         playerDeck = [];
@@ -294,11 +285,11 @@ class Game extends Component {
             game.all_dominoes[idDropped] = value;
             game.board = boardCopy;
             game.player_turn = (playerIndex + 1) % game.players;
+            game.statistics[playerIndex].plays_count++;
+            game.statistics[playerIndex].total_score += dots1 + dots2;
             Game.notifyGame(game);
             this.setState({
                 valid_placements: [],
-                plays_count: this.state.plays_count + 1,
-                total_score: this.state.total_score + dots1 + dots2
             });
         }
     }
@@ -335,10 +326,10 @@ class Game extends Component {
         playerDeck.push(randBankDomino);
         game.bank = game.bank.filter((k) => k !== randBankDomino);
         game.player_turn = (playerIndex + 1) % game.players;
+        game.statistics[playerIndex].plays_count++;
+        game.statistics[playerIndex].pieces_taken++;
         Game.notifyGame(game);
         this.setState({
-            plays_count: this.state.plays_count + 1,
-            pieces_taken: this.state.pieces_taken + 1,
             valid_placements: []
         });
     }
@@ -406,15 +397,42 @@ class Game extends Component {
         }
     }
 
+
+
+    createStatisticsTable = () => {
+        let table = [];
+        for (let i = 0; i < this.state.game.players; i++) {
+            let children = [];
+            if (this.state.game.statistics[i]) {
+                children.push(<td>{this.state.game.registered_users[i]}</td>);
+                children.push(<td>{this.state.game.statistics[i].plays_count}</td>);
+                children.push(<td>{this.state.game.statistics[i].pieces_taken}</td>);
+                children.push(<td>{this.state.game.statistics[i].total_score}</td>);
+                children.push(<td>{this.state.game.statistics[i].elapsed_time}</td>);
+            }
+            table.push(<tr>{children}</tr>)
+        }
+        return table
+    };
+
     render() {
+        let statistics = this.state.game.statistics[playerIndex];
+        if (!statistics) {
+            statistics = {
+                plays_count: 0,
+                pieces_taken: 0,
+                total_score: 0,
+                elapsed_time: 0
+            };
+        }
         const endResult = this.getEndResult();
         const currentPlayersTurn = this.isCurrentPlayerTurn();
         const missingPlayers = this.state.game.players - this.state.game.registered_users.length;
-        const temp_mins = Math.floor(this.state.elapsed_time / 60);
+        const temp_mins = Math.floor(statistics.elapsed_time / 60);
         const temp_secs = Math.floor(this.state.elapsed_time % 60);
         const mins = temp_mins < 10 ? '0' + temp_mins : temp_mins;
         const secs = temp_secs < 10 ? '0' + temp_secs : temp_secs;
-        const avg = this.state.plays_count > 0 ? Math.floor(this.state.elapsed_time / this.state.plays_count) : 0;
+        const avg = statistics.plays_count > 0 ? Math.floor(statistics.elapsed_time / statistics.plays_count) : 0;
         return (
             <div>
                 <h1>Dominoes <img src={ImageHeadline} alt='dominoesheader' /> Game!</h1>
@@ -433,10 +451,20 @@ class Game extends Component {
                     {missingPlayers > 0 && (
                         <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
                     )}
-                    <h4>Players in Game</h4>
-                    {this.state.game.registered_users.map((player) => (
-                        <li key={player}>{player}</li>
-                    ))}
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Play Count</th>
+                            <th>Pieces Taken</th>
+                            <th>Total Score</th>
+                            <th>Ekapsed Time</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {this.createStatisticsTable()}
+                        </tbody>
+                    </table>
                 </div>
                 <h2>Board:</h2>
                 <div
@@ -452,11 +480,11 @@ class Game extends Component {
                     Get domino from the bank
                 </button>
                 <div className="statistics">
-                    <h4>Plays counter: {this.state.plays_count}</h4>
+                    <h4>Plays counter: {statistics.plays_count}</h4>
                     <h4>Elapsed time: {mins + ':' + secs}</h4>
                     <h4>Average time: {avg + 's'}</h4>
-                    <h4>Pieces taken: {this.state.pieces_taken}</h4>
-                    <h4>Total score: {this.state.total_score}</h4>
+                    <h4>Pieces taken: {statistics.pieces_taken}</h4>
+                    <h4>Total score: {statistics.total_score}</h4>
                 </div>
                 <h3>{endResult}</h3>
             </div >
