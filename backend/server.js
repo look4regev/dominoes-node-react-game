@@ -131,6 +131,7 @@ router.post('/creategame', function(req, res) {
         all_dominoes: allDominoes,
         registered_users: [],
         player_turn: -1,
+        last_move_draw: false,
         player_decks: new Array(players),
         statistics: new Array(players),
         board: getBoard(9, 9),
@@ -141,10 +142,22 @@ router.post('/creategame', function(req, res) {
 
 router.post('/updategame', function(req, res) {
     res.contentType('application/json');
-    const game = req.body;
-    if (!game) {
+    const objectPosted = req.body;
+    if (!objectPosted) {
         res.status(500).send({"error": "must provide game"});
         return;
+    }
+    let game;
+    if ('drawFromBank' in objectPosted) {
+        game = objectPosted.game;
+        if (!game) {
+            res.status(500).send({"error": "must provide game"});
+            return;
+        }
+        game.last_move_draw = true;
+    } else {
+        game = objectPosted;
+        game.last_move_draw = false;
     }
     if (!game.gamename in games) {
         res.status(500).send({ "error": "game does not exist" });
@@ -188,7 +201,7 @@ router.post('/deletegame', function(req, res) {
 });
 
 function getPlayerStatistics(players) {
-    statistics = [];
+    let statistics = [];
     for (let i = 0; i < players; i++) {
         statistics.push({
             plays_count: 0,
@@ -312,7 +325,6 @@ router.get('/games', function(req, res) {
     res.contentType('application/json');
     const gamename = req.query.gamename;
     if (!gamename) {
-        // res.send(_.filter(games, (game) => !game.gamename.includes(SingleGameSuffix)));
         res.send(games);
         return;
     }

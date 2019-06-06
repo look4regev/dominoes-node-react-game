@@ -59,7 +59,7 @@ class Game extends Component {
             if (this.isCurrentPlayerTurn()) {
                 let game = this.state.game;
                 game.statistics[playerIndex].elapsed_time++;
-                Game.notifyGame(game);
+                Game.notifyGame(game, this.state.game.last_move_draw);
             }
         }, 1000);
     }
@@ -294,10 +294,19 @@ class Game extends Component {
         }
     }
 
-    static notifyGame(game) {
+    static notifyGame(game, drawFromBank=false) {
+        let objectToPost;
+        if (drawFromBank) {
+            objectToPost = {
+                drawFromBank: true,
+                game: game
+            }
+        } else {
+            objectToPost = game;
+        }
         fetch('/updategame', {
             method: 'POST',
-            body: JSON.stringify(game),
+            body: JSON.stringify(objectToPost),
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -328,7 +337,7 @@ class Game extends Component {
         game.player_turn = (playerIndex + 1) % game.players;
         game.statistics[playerIndex].plays_count++;
         game.statistics[playerIndex].pieces_taken++;
-        Game.notifyGame(game);
+        Game.notifyGame(game, true);
         this.setState({
             valid_placements: []
         });
@@ -397,23 +406,13 @@ class Game extends Component {
         }
     }
 
-
-
-    createStatisticsTable = () => {
-        let table = [];
-        for (let i = 0; i < this.state.game.players; i++) {
-            let children = [];
-            if (this.state.game.statistics[i]) {
-                children.push(<td>{this.state.game.registered_users[i]}</td>);
-                children.push(<td>{this.state.game.statistics[i].plays_count}</td>);
-                children.push(<td>{this.state.game.statistics[i].pieces_taken}</td>);
-                children.push(<td>{this.state.game.statistics[i].total_score}</td>);
-                children.push(<td>{this.state.game.statistics[i].elapsed_time}</td>);
-            }
-            table.push(<tr>{children}</tr>)
+    isPlayedLastTurn() {
+        const diff = this.state.game.player_turn - playerIndex;
+        if (diff > 0) {
+            return diff === 1;
         }
-        return table
-    };
+        return this.state.game.players + diff === 1;
+    }
 
     render() {
         let statistics = this.state.game.statistics[playerIndex];
@@ -428,6 +427,7 @@ class Game extends Component {
         const endResult = this.getEndResult();
         const currentPlayersTurn = this.isCurrentPlayerTurn();
         const missingPlayers = this.state.game.players - this.state.game.registered_users.length;
+        const lastPlayerPlayed = playerIndex > 0 ? this.state.game.player_turn - 1 : this.state.game.players - 1;
         const temp_mins = Math.floor(statistics.elapsed_time / 60);
         const temp_secs = Math.floor(statistics.elapsed_time % 60);
         const mins = temp_mins < 10 ? '0' + temp_mins : temp_mins;
@@ -450,6 +450,9 @@ class Game extends Component {
                     )}
                     {missingPlayers > 0 && (
                         <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
+                    )}
+                    {this.state.game.last_move_draw && !this.isPlayedLastTurn() && (
+                        <h4>Player {lastPlayerPlayed + 1} drew from bank</h4>
                     )}
                     <h4>Players in Game</h4>
                     {this.state.game.registered_users.map((player) => (
