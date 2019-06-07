@@ -56,7 +56,7 @@ class Game extends Component {
             if (this.isGameInProgress() && !deckFilled && playerIndex >= 0) {
                 this.fillDeck();
             }
-            if (this.isCurrentPlayerTurn()) {
+            if (this.isGameInProgress() && this.isCurrentPlayerTurn()) {
                 let game = this.state.game;
                 game.statistics[playerIndex].elapsed_time++;
                 Game.notifyGame(game, this.state.game.last_move_draw);
@@ -99,22 +99,26 @@ class Game extends Component {
     }
 
     leaveRoom() {
-        const data = new URLSearchParams();
-        data.append('username', this.state.username);
-        fetch('/leavegame', {
-            method: 'post',
-            body: data
-        }).then(res => {
-            if (res.status === 200) {
-                this.getGameData('');
-            } else {
-                return res.json();
-            }
-        }).then(jsonData => {
-            if (jsonData) {
-                alert(jsonData.error);
-            }
-        });
+        if (this.state.game.players_finished.includes(playerIndex)) {
+            this.getGameData('');
+        } else {
+            const data = new URLSearchParams();
+            data.append('username', this.state.username);
+            fetch('/leavegame', {
+                method: 'post',
+                body: data
+            }).then(res => {
+                if (res.status === 200) {
+                    this.getGameData('');
+                } else {
+                    return res.json();
+                }
+            }).then(jsonData => {
+                if (jsonData) {
+                    alert(jsonData.error);
+                }
+            });
+        }
     }
 
     getData(val) {
@@ -284,7 +288,7 @@ class Game extends Component {
             value.placement = placement;
             game.all_dominoes[idDropped] = value;
             game.board = boardCopy;
-            game.player_turn = (playerIndex + 1) % game.players;
+            game.player_turn = Game.getNextTurn(game);
             game.statistics[playerIndex].plays_count++;
             game.statistics[playerIndex].total_score += dots1 + dots2;
             Game.notifyGame(game);
@@ -317,16 +321,40 @@ class Game extends Component {
         return window.location.reload();
     }
 
+    static getPlacePosition(game, searchedPlayerIndex) {
+        for (let i = 0; i < game.players_finished.length; i++) {
+            if (game.players_finished[i] === searchedPlayerIndex) {
+                return i;
+            }
+        }
+        return -3;
+    }
+
     getEndResult() {
-        if (this.isGameInProgress() && deckFilled && playerDeck.length === 0) {
-            clearInterval(this.interval);
-            //TODO - notify win
-            return "Player wins!";
-        } else if (this.state.game.bank.length === 0) {
+        if (this.isGameInProgress() && deckFilled) {
+            let game = this.state.game;
+            let placePosition = Game.getPlacePosition(game, playerIndex);
+            if ((placePosition < 0 && playerDeck.length === 0) || (placePosition < 0 && game.players > 1 && game.players - game.players_finished.length === 1)) {
+                game.players_finished.push(playerIndex);
+                placePosition = game.players_finished.length - 1;
+                Game.notifyGame(game);
+                clearInterval(this.interval);
+            }
+            if (placePosition >= 0) {
+                if (placePosition === 0) {
+                    return "You won! 👏";
+                }
+                if (placePosition === game.players - 1) {
+                    return "You lost! 💩";
+                }
+                return "You finished 2nd";
+            }
+        }
+        /*} else if (this.state.game.bank.length === 0) {
             //TODO - notify loss
             clearInterval(this.interval);
             return "Player loses!"
-        }
+        }*/
     }
 
     getBankDomino() {
@@ -334,7 +362,7 @@ class Game extends Component {
         const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
         playerDeck.push(randBankDomino);
         game.bank = game.bank.filter((k) => k !== randBankDomino);
-        game.player_turn = (playerIndex + 1) % game.players;
+        game.player_turn = Game.getNextTurn(game);
         game.statistics[playerIndex].plays_count++;
         game.statistics[playerIndex].pieces_taken++;
         Game.notifyGame(game, true);
@@ -406,13 +434,65 @@ class Game extends Component {
         }
     }
 
+    createStatisticsTable = () => {
+        let table = [];
+        for (let i = 0; i < this.state.game.players; i++) {
+            let children = [];
+            if (this.state.game.statistics[i]) {
+                children.push(<td>{this.state.game.registered_users[i]}</td>);
+                children.push(<td>{this.state.game.statistics[i].plays_count}</td>);
+                children.push(<td>{this.state.game.statistics[i].pieces_taken}</td>);
+                children.push(<td>{this.state.game.statistics[i].total_score}</td>);
+                children.push(<td>{this.state.game.statistics[i].elapsed_time}</td>);
+            }
+            table.push(<tr>{children}</tr>)
+        }
+        return table
+    };
+
+    isGameOver() {
+        return this.state.game.players_finished.length === this.state.game.players;
+    }
+
+    static getNextTurn(game) {
+        let nextPlayerTurn = (playerIndex + 1) % game.players;
+        while (Game.getPlacePosition(game, nextPlayerTurn) >= 0) {
+            nextPlayerTurn = (nextPlayerTurn + 1) % game.players;
+        }
+        return nextPlayerTurn;
+    }
+
     isPlayedLastTurn() {
+        if (this.state.game.players_finished.length > 0) {
+            if (this.state.game.players_finished[0] === playerIndex) {
+                return false;
+            }
+            return !this.isCurrentPlayerTurn();
+        }
         const diff = this.state.game.player_turn - playerIndex;
         if (diff > 0) {
             return diff === 1;
         }
         return this.state.game.players + diff === 1;
     }
+
+    getLastPlayerPlayed() {
+        if (this.state.game.players_finished.length > 0) {
+            if (playerIndex === this.state.game.players_finished[0]) {
+                return this.state.game.players - this.state.game.player_turn - playerIndex;
+            }
+            for (let i = 0; i < this.state.game.registered_users.length; i++) {
+                if (i !== playerIndex && i !== this.state.game.players_finished[0]) {
+                    return i;
+                }
+            }
+        }
+        return playerIndex > 0 ? this.state.game.player_turn - 1 : this.state.game.players - 1;
+    }
+
+    // isLeaveRoomDisabled(missingPlayers) {
+    //     return missingPlayers === 0 && !this.state.game.players_finished.includes(playerIndex);
+    // }
 
     render() {
         let statistics = this.state.game.statistics[playerIndex];
@@ -427,7 +507,6 @@ class Game extends Component {
         const endResult = this.getEndResult();
         const currentPlayersTurn = this.isCurrentPlayerTurn();
         const missingPlayers = this.state.game.players - this.state.game.registered_users.length;
-        const lastPlayerPlayed = playerIndex > 0 ? this.state.game.player_turn - 1 : this.state.game.players - 1;
         const temp_mins = Math.floor(statistics.elapsed_time / 60);
         const temp_secs = Math.floor(statistics.elapsed_time % 60);
         const mins = temp_mins < 10 ? '0' + temp_mins : temp_mins;
@@ -441,7 +520,7 @@ class Game extends Component {
                         <h2>Player {playerIndex + 1}</h2>
                     )}
                 <button disabled={missingPlayers === 0} onClick={this.logout}>Logout</button>
-                <button disabled={missingPlayers === 0} onClick={this.leaveRoom}>Leave Room</button>
+                <button disabled={missingPlayers === 0 && !this.state.game.players_finished.includes(playerIndex)} onClick={this.leaveRoom}>Leave Room</button>
                     {this.isCurrentPlayerTurn() && (
                         <h2>Your turn</h2>
                     )}
@@ -452,34 +531,66 @@ class Game extends Component {
                         <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
                     )}
                     {this.state.game.last_move_draw && !this.isPlayedLastTurn() && (
-                        <h4>Player {lastPlayerPlayed + 1} drew from bank</h4>
+                        <h4>Player {this.getLastPlayerPlayed() + 1} drew from bank</h4>
                     )}
                     <h4>Players in Game</h4>
                     {this.state.game.registered_users.map((player) => (
-                        <li key={player}>{player}</li>
+                        <li key={player + '-ingame'} className={player === this.state.username ? 'me' : ''}>{player}</li>
                     ))}
                 </div>
-                <h2>Board:</h2>
-                <div
-                    onDragOver={(e) => Game.onDragOver(e)}
-                    onDrop={(e) => this.onDrop(e)}>
-                    <Board allDominoes={this.state.game.all_dominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board}/>
+                {!this.isGameOver() && (
+                <div>
+                    <h2>Board:</h2>
+                    <div
+                        onDragOver={(e) => Game.onDragOver(e)}
+                        onDrop={(e) => this.onDrop(e)}>
+                        <Board allDominoes={this.state.game.all_dominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board}/>
+                    </div>
+                    <h2>Player deck:</h2>
+                    <div onDragOver={(e) => Game.onDragOver(e)}>
+                        <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerDeck} />
+                    </div>
+                    <button disabled={!currentPlayersTurn} onClick={() => this.getBankDomino()}>
+                        Get domino from the bank
+                    </button>
+                    <div className="statistics">
+                        <h4>Plays counter: {statistics.plays_count}</h4>
+                        <h4>Elapsed time: {mins + ':' + secs}</h4>
+                        <h4>Average time: {avg + 's'}</h4>
+                        <h4>Pieces taken: {statistics.pieces_taken}</h4>
+                        <h4>Total score: {statistics.total_score}</h4>
+                    </div>
                 </div>
-                <h2>Player deck:</h2>
-                <div onDragOver={(e) => Game.onDragOver(e)}>
-                    <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerDeck} />
-                </div>
-                <button disabled={!currentPlayersTurn} onClick={() => this.getBankDomino()}>
-                    Get domino from the bank
-                </button>
-                <div className="statistics">
-                    <h4>Plays counter: {statistics.plays_count}</h4>
-                    <h4>Elapsed time: {mins + ':' + secs}</h4>
-                    <h4>Average time: {avg + 's'}</h4>
-                    <h4>Pieces taken: {statistics.pieces_taken}</h4>
-                    <h4>Total score: {statistics.total_score}</h4>
-                </div>
-                <h3>{endResult}</h3>
+                )}
+                {this.isGameOver() && (
+                    <div>
+                        <h2>Game Summary:</h2>
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Play Count</th>
+                                <th>Pieces Taken</th>
+                                <th>Total Score</th>
+                                <th>Elapsed Time</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {this.createStatisticsTable()}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                <h2>{endResult}</h2>
+                {this.state.game.players_finished.length > 0 && (
+                    <div>
+                        <h3>Players Finished</h3>
+                        <ol>
+                        {this.state.game.players_finished.map((player) => (
+                        <li key={player + '-finished'}>{this.state.game.registered_users[player]}</li>))}
+                        </ol>
+                    </div>
+                )}
             </div >
         );
     }

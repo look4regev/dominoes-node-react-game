@@ -112,7 +112,7 @@ class Lobby extends Component {
                     <h2>Players</h2>
                     <ul>
                         {this.state.players.map((player) => (
-                            <li key={player}>{player}</li>
+                            <li key={player} className={player === this.state.username ? 'me' : ''}>{player}</li>
                         ))}
                     </ul>
                 </div>

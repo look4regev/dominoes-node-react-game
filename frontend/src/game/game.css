@@ -53,3 +53,7 @@ button[disabled]{
 .players {
   display: inline;
 }
+
+.me {
+  font-weight: bold;
+}

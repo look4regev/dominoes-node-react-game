@@ -12,3 +12,7 @@
 .creategame {
   display: flex;
 }
+
+.me {
+  font-weight: bold;
+}

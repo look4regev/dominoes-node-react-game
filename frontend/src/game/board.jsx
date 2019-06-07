@@ -30,7 +30,7 @@ class Board extends Component {
                       if (this.props.dominoes[i][j].direction === Left || this.props.dominoes[i][j].direction === Right) {
                           cell.push(<td key={cellID} className="separator_container" id={cellID}><div className="separator"/></td>);
                       } else {
-                          cell.push(<td key={cellID} className="separator_container_vertical" id={cellID}><h5 className="separator_vertical"/></td>);
+                          cell.push(<td key={cellID} className="separator_container_vertical" id={cellID}><h5 className="separator_vertical"> </h5></td>);
                       }
                       break;
                   default:

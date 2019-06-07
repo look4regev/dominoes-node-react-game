@@ -13,7 +13,7 @@ app.use('/', router);
 let usernames = [];
 let games = {};
 
-const PlayerInitialDominoesCount = 6;
+const PlayerInitialDominoesCount = 1;
 
 const allDominoes = {
     0:  { dot: 0,  direction: Left }, 1:  { dot: 1,  direction: Left }, 2:  { dot: 2,  direction: Left }, 3:  { dot: 3,  direction: Left }, 4:  { dot: 4,  direction: Left }, 5:  { dot: 5,  direction: Left }, 6:  { dot: 6,  direction: Left },
@@ -132,6 +132,7 @@ router.post('/creategame', function(req, res) {
         registered_users: [],
         player_turn: -1,
         last_move_draw: false,
+        players_finished: [],
         player_decks: new Array(players),
         statistics: new Array(players),
         board: getBoard(9, 9),

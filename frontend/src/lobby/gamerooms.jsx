@@ -66,12 +66,16 @@ class GameRooms extends Component {
         return game.registered_users.length === game.players;
     }
 
+    static gameFinished(game) {
+        return game.players === game.players_finished.length;
+    }
+
     deleteGame(game) {
-        if (game.registered_users.length > 0) {
+        if (game.registered_users.length > 0 && !GameRooms.gameStarted()) {
             alert('Unable to delete game - already have registered players');
             return;
         }
-        if (GameRooms.gameStarted(game)) {
+        if (GameRooms.gameStarted(game) && !GameRooms.gameFinished(game)) {
             alert('Unable to delete game - game already started');
             return;
         }
@@ -111,13 +115,13 @@ class GameRooms extends Component {
                 {Object.keys(this.state.games).map((gamename) => {
                     const game = this.state.games[gamename];
                     const username = this.state.username;
-                    return <tr key={gamename} className={GameRooms.gameStarted(game) ? 'activegame': ''}>
+                    return <tr key={gamename} className={GameRooms.gameStarted(game) && !GameRooms.gameFinished(game) ? 'activegame': ''}>
                         <td>{game.gamename}</td>
                         <td>{game.players}</td>
                         <td>{game.username}</td>
                         <td>{game.registered_users.join(',')}</td>
-                        <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
-                        <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.singleGame(game)}>Single Game</button>}</td>
+                        <td>{!GameRooms.gameStarted(game) && !GameRooms.gameFinished(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
+                        <td>{!GameRooms.gameStarted(game) && !GameRooms.gameFinished(game) && <button onClick={() => this.singleGame(game)}>Single Game</button>}</td>
                         <td>{game.username === username && <button onClick={() => this.deleteGame(game)}>Delete</button>}</td>
                     </tr>})}
                 </tbody>
