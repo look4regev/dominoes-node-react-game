@@ -92,27 +92,43 @@ class Game extends Component {
         this.props.sendGameData(gamename);
     }
 
+    leaveRoomFetch = data => {
+        fetch('/leavegame', {
+            method: 'post',
+            body: data
+        }).then(res => {
+            if (res.status === 200) {
+                this.getGameData('');
+            } else {
+                return res.json();
+            }
+        }).then(jsonData => {
+            if (jsonData) {
+                alert(jsonData.error);
+            }
+        });
+    };
+
     leaveRoom() {
-        if (this.state.game.players_finished.includes(playerIndex)) {
-            this.getGameData('');
-        } else {
+        if (!this.isGameInProgress()) {
             const data = new URLSearchParams();
             data.append('username', this.state.username);
-            fetch('/leavegame', {
-                method: 'post',
-                body: data
-            }).then(res => {
-                if (res.status === 200) {
-                    this.getGameData('');
-                } else {
-                    return res.json();
+            this.leaveRoomFetch(data)
+        } else {
+            let game = this.state.game;
+            game.players_left.push(playerIndex);
+            Game.notifyGame(game);
+            if (this.isGameOver()) {
+                if (game.players_left.length === game.players) {
+                    const data = new URLSearchParams();
+                    data.append('clearroom', game.gamename);
+                    this.leaveRoomFetch(data);
+                    return;
                 }
-            }).then(jsonData => {
-                if (jsonData) {
-                    alert(jsonData.error);
-                }
-            });
+            }
         }
+        this.getGameData('');
+
     }
 
     getData(val) {

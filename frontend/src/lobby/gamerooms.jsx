@@ -120,8 +120,8 @@ class GameRooms extends Component {
                         <td>{game.players}</td>
                         <td>{game.username}</td>
                         <td>{game.registered_users.join(',')}</td>
-                        <td>{!GameRooms.gameStarted(game) && !GameRooms.gameFinished(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
-                        <td>{!GameRooms.gameStarted(game) && !GameRooms.gameFinished(game) && <button onClick={() => this.singleGame(game)}>Single Game</button>}</td>
+                        <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
+                        <td>{game.registered_users.length === 0 && <button onClick={() => this.singleGame(game)}>Single Game</button>}</td>
                         <td>{game.username === username && <button onClick={() => this.deleteGame(game)}>Delete</button>}</td>
                     </tr>})}
                 </tbody>

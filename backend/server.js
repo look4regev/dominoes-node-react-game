@@ -37,6 +37,7 @@ router.post('/signup', function(req, res) {
         return;
     }
     usernames.push(username);
+    res.cookie('username', username);
     res.sendStatus(200);
 });
 
@@ -58,6 +59,7 @@ router.post('/logout', function(req, res) {
             games = _.omit(games, [gamename]);
         }
     });
+    res.cookie('username', '');
     res.sendStatus(200);
 });
 
@@ -94,6 +96,29 @@ function getBoard(num_rows, num_cols) {
     return board;
 }
 
+function createGame(players, gamename, username) {
+    let playerDecks = [];
+    for (let i = 0; i < players; i++) {
+        playerDecks.push([]);
+    }
+    return {
+        gamename: gamename,
+        players: players,
+        previous_players: players,
+        username: username,
+        all_dominoes: allDominoes,
+        registered_users: [],
+        players_left: [],
+        player_turn: -1,
+        last_move_draw: false,
+        players_finished: [],
+        player_decks: playerDecks,
+        statistics: new Array(players),
+        board: getBoard(9, 9),
+        bank: Object.keys(allDominoes)
+    };
+}
+
 router.post('/creategame', function(req, res) {
     res.contentType('application/json');
     const username = req.body.username;
@@ -124,24 +149,7 @@ router.post('/creategame', function(req, res) {
         res.status(500).send({ "error": "number of players must be either 2 or 3" });
         return;
     }
-    let playerDecks = [];
-    for (let i = 0; i < players; i++) {
-        playerDecks.push([]);
-    }
-    games[gamename] = {
-        gamename: gamename,
-        players: players,
-        username: username,
-        all_dominoes: allDominoes,
-        registered_users: [],
-        player_turn: -1,
-        last_move_draw: false,
-        players_finished: [],
-        player_decks: playerDecks,
-        statistics: new Array(players),
-        board: getBoard(9, 9),
-        bank: Object.keys(allDominoes)
-    };
+    games[gamename] = createGame(players, gamename, username);
     res.sendStatus(200);
 });
 
@@ -297,6 +305,12 @@ router.post('/singlegame', function(req, res) {
 router.post('/leavegame', function(req, res) {
     res.contentType('application/json');
     const username = req.body.username;
+    const clearRoom = req.body.clearroom;
+    if (clearRoom) {
+        games[clearRoom] = createGame(games[clearRoom].previous_players, clearRoom, games[clearRoom].username);
+        res.sendStatus(200);
+        return;
+    }
     if (!username) {
         res.status(500).send({ "error": "must provide username" });
         return;
