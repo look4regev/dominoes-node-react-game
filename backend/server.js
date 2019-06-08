@@ -13,8 +13,7 @@ app.use('/', router);
 let usernames = [];
 let games = {};
 
-//TODO amir - revert
-const PlayerInitialDominoesCount = 1;
+const PlayerInitialDominoesCount = 6;
 
 const allDominoes = {
     0:  { dot: 0,  direction: Left }, 1:  { dot: 1,  direction: Left }, 2:  { dot: 2,  direction: Left }, 3:  { dot: 3,  direction: Left }, 4:  { dot: 4,  direction: Left }, 5:  { dot: 5,  direction: Left }, 6:  { dot: 6,  direction: Left },
@@ -257,9 +256,7 @@ router.post('/joingame', function(req, res) {
         }
         game.player_decks = playerDecks;
         game.statistics = statistics;
-        //TODO amir - revert
-        // game.bank = Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
-        game.bank = [];
+        game.bank = Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
     }
     games[gamename] = game;
     res.sendStatus(200);

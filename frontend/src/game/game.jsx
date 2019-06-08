@@ -360,7 +360,7 @@ class Game extends Component {
                 Game.notifyGame(game);
                 clearInterval(this.interval);
             }
-            if (this.isEverybodyPlayingStuck() && !this.isGameOver()) {
+            if (this.isEverybodyPlayingStuck() && !game.players_finished.includes(playerIndex)) {
                 let sortable = [];
                 for (let i = 0; i < game.registered_users.length; i++) {
                     sortable.push([i, this.calculateScore(game.player_decks[i])]);
