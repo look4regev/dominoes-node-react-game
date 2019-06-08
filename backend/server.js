@@ -13,6 +13,7 @@ app.use('/', router);
 let usernames = [];
 let games = {};
 
+//TODO amir - revert
 const PlayerInitialDominoesCount = 1;
 
 const allDominoes = {
@@ -124,6 +125,10 @@ router.post('/creategame', function(req, res) {
         res.status(500).send({ "error": "number of players must be either 2 or 3" });
         return;
     }
+    let playerDecks = [];
+    for (let i = 0; i < players; i++) {
+        playerDecks.push([]);
+    }
     games[gamename] = {
         gamename: gamename,
         players: players,
@@ -133,7 +138,7 @@ router.post('/creategame', function(req, res) {
         player_turn: -1,
         last_move_draw: false,
         players_finished: [],
-        player_decks: new Array(players),
+        player_decks: playerDecks,
         statistics: new Array(players),
         board: getBoard(9, 9),
         bank: Object.keys(allDominoes)
@@ -193,7 +198,7 @@ router.post('/deletegame', function(req, res) {
         res.status(500).send({ "error": "user not allowed to delete game" });
         return;
     }
-    if (game.registered_users.length > 0) {
+    if (game.registered_users.length > 0 && game.players_finished.length === 0) {
         res.status(500).send({ "error": "unable to delete due to game having registered players" });
         return;
     }
@@ -252,7 +257,9 @@ router.post('/joingame', function(req, res) {
         }
         game.player_decks = playerDecks;
         game.statistics = statistics;
-        game.bank = Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
+        //TODO amir - revert
+        // game.bank = Object.keys(allDominoes).filter((k) => !usedDominoes.includes(k))
+        game.bank = [];
     }
     games[gamename] = game;
     res.sendStatus(200);

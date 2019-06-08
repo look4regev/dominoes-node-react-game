@@ -71,7 +71,7 @@ class GameRooms extends Component {
     }
 
     deleteGame(game) {
-        if (game.registered_users.length > 0 && !GameRooms.gameStarted()) {
+        if (game.registered_users.length > 0 && !GameRooms.gameStarted(game)) {
             alert('Unable to delete game - already have registered players');
             return;
         }

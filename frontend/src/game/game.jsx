@@ -5,12 +5,12 @@ import Board from "./board.jsx";
 import PlayerDeck from "./playerDeck.jsx";
 import ImageHeadline from "./dominoes-header.jpg"
 import { Left, Right, Up, Down } from "./domino/halfDomino.jsx";
+import * as _ from "lodash";
 
 export const Empty = -1;
 export const Separator = -2;
 
 let playerIndex = -2;
-let playerDeck = [];
 let deckFilled = false;
 
 class Game extends Component {
@@ -36,11 +36,6 @@ class Game extends Component {
         return this.state.game.players === this.state.game.registered_users.length;
     }
 
-    fillDeck() {
-        playerDeck = this.state.game.player_decks[playerIndex];
-        deckFilled = true;
-    }
-
     findPlayerIndex() {
         for (let i = 0; i < this.state.game.registered_users.length; i++) {
             if (this.state.game.registered_users[i] === this.state.username) {
@@ -54,7 +49,7 @@ class Game extends Component {
         this.interval = setInterval(() => {
             playerIndex = this.findPlayerIndex();
             if (this.isGameInProgress() && !deckFilled && playerIndex >= 0) {
-                this.fillDeck();
+                deckFilled = true;
             }
             if (this.isGameInProgress() && this.isCurrentPlayerTurn()) {
                 let game = this.state.game;
@@ -70,7 +65,6 @@ class Game extends Component {
                 valid_placements: []
             }
         );
-        playerDeck = [];
         deckFilled = false;
         playerIndex = -2;
     }
@@ -281,7 +275,7 @@ class Game extends Component {
                 boardCopy[placement.x + 1][placement.y].direction = domino.direction;
             }
             this.resizeBoardIfNeeded(boardCopy);
-            playerDeck = playerDeck.filter((k) => {
+            game.player_decks[playerIndex] = game.player_decks[playerIndex].filter((k) => {
                 return k !== idDropped.toString()
             });
             let value = game.all_dominoes[idDropped];
@@ -330,13 +324,55 @@ class Game extends Component {
         return -3;
     }
 
+    calculateScore(playerDeck) {
+        let totalScore = 0;
+        for (let i = 0; i < playerDeck.length; i++) {
+             totalScore += Math.floor(playerDeck[i].dot / 10) + Math.floor(playerDeck[i].dot % 10);
+        }
+        return totalScore;
+    }
+
     getEndResult() {
         if (this.isGameInProgress() && deckFilled) {
             let game = this.state.game;
-            let placePosition = Game.getPlacePosition(game, playerIndex);
-            if ((placePosition < 0 && playerDeck.length === 0) || (placePosition < 0 && game.players > 1 && game.players - game.players_finished.length === 1)) {
+            let placePosition;
+            if (game.players === 1) {
+                if (game.player_decks[0].length === 0) {
+                    if (!this.isGameOver()) {
+                        game.players_finished.push(0);
+                        Game.notifyGame(game);
+                        clearInterval(this.interval);
+                    }
+                    return "You won! 👏";
+                } else if (game.bank.length === 0) {
+                    if (!this.isGameOver()) {
+                        game.players_finished.push(0);
+                        Game.notifyGame(game);
+                        clearInterval(this.interval);
+                    }
+                    return "You lost! 💩";
+                }
+            }
+            placePosition = Game.getPlacePosition(game, playerIndex);
+            if ((placePosition < 0 && this.state.game.player_decks[playerIndex].length === 0) || (placePosition < 0 && game.players > 1 && game.players - game.players_finished.length === 1)) {
                 game.players_finished.push(playerIndex);
                 placePosition = game.players_finished.length - 1;
+                Game.notifyGame(game);
+                clearInterval(this.interval);
+            }
+            if (this.isEverybodyPlayingStuck() && !this.isGameOver()) {
+                let sortable = [];
+                for (let i = 0; i < game.registered_users.length; i++) {
+                    sortable.push([i, this.calculateScore(game.player_decks[i])]);
+                }
+                sortable.sort((a, b) => ( a[1] - b[1]));
+                if (game.players_finished.length > 0) {
+                    _.remove(sortable, (el) => el[0] === game.players_finished[0]);
+                }
+                for (let i = 0; i < sortable.length; i++) {
+                    game.players_finished.push(sortable[i][0]);
+                }
+                placePosition = Game.getPlacePosition(game, playerIndex);
                 Game.notifyGame(game);
                 clearInterval(this.interval);
             }
@@ -350,17 +386,21 @@ class Game extends Component {
                 return "You finished 2nd";
             }
         }
-        /*} else if (this.state.game.bank.length === 0) {
-            //TODO - notify loss
-            clearInterval(this.interval);
-            return "Player loses!"
-        }*/
+    }
+
+    skipTurn() {
+        let game = this.state.game;
+        game.player_turn = Game.getNextTurn(game);
+        Game.notifyGame(game);
+        this.setState({
+            valid_placements: []
+        });
     }
 
     getBankDomino() {
         let game = this.state.game;
         const randBankDomino = game.bank[Math.floor(Math.random() * game.bank.length)];
-        playerDeck.push(randBankDomino);
+        game.player_decks[playerIndex].push(randBankDomino);
         game.bank = game.bank.filter((k) => k !== randBankDomino);
         game.player_turn = Game.getNextTurn(game);
         game.statistics[playerIndex].plays_count++;
@@ -451,7 +491,52 @@ class Game extends Component {
     };
 
     isGameOver() {
-        return this.state.game.players_finished.length === this.state.game.players;
+        return this.state.game.players_finished.length === this.state.game.players || this.isEverybodyPlayingStuck();
+    }
+
+    isPlayerStuck(player) {
+        const game = this.state.game;
+        if (!deckFilled || game.bank.length > 0) {
+            return false;
+        }
+        const playerDeck = game.player_decks[player];
+        if (game.players_finished.includes(player)) {
+            return true;
+        }
+        for (let j = 0; j < playerDeck.length; j++) {
+            let domino = {};
+            Object.assign(domino, game.all_dominoes[playerDeck[j]]);
+            domino.direction = Left;
+            if (this.getValidPlacements(domino).length > 0) {
+                return false;
+            }
+            domino.direction = Up;
+            if (this.getValidPlacements(domino).length > 0) {
+                return false;
+            }
+            domino.direction = Right;
+            if (this.getValidPlacements(domino).length > 0) {
+                return false;
+            }
+            domino.direction = Down;
+            if (this.getValidPlacements(domino).length > 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    isEverybodyPlayingStuck() {
+        const game = this.state.game;
+        if (!deckFilled || game.bank.length > 0) {
+            return false;
+        }
+        for (let i = 0; i < game.registered_users.length; i++) {
+            if (!this.isPlayerStuck(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static getNextTurn(game) {
@@ -489,10 +574,6 @@ class Game extends Component {
         }
         return playerIndex > 0 ? this.state.game.player_turn - 1 : this.state.game.players - 1;
     }
-
-    // isLeaveRoomDisabled(missingPlayers) {
-    //     return missingPlayers === 0 && !this.state.game.players_finished.includes(playerIndex);
-    // }
 
     render() {
         let statistics = this.state.game.statistics[playerIndex];
@@ -548,11 +629,16 @@ class Game extends Component {
                     </div>
                     <h2>Player deck:</h2>
                     <div onDragOver={(e) => Game.onDragOver(e)}>
-                        <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerDeck} />
+                        <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerIndex < 0 ? [] : this.state.game.player_decks[playerIndex]} />
                     </div>
-                    <button disabled={!currentPlayersTurn} onClick={() => this.getBankDomino()}>
+                    <div className="control">
+                    <button disabled={!currentPlayersTurn || this.state.game.bank.length === 0} onClick={() => this.getBankDomino()}>
                         Get domino from the bank
                     </button>
+                    <button disabled={!currentPlayersTurn || this.state.game.players === 1 || !this.isPlayerStuck(playerIndex)} onClick={() => this.skipTurn()}>
+                        Skip turn
+                    </button>
+                    </div>
                     <div className="statistics">
                         <h4>Plays counter: {statistics.plays_count}</h4>
                         <h4>Elapsed time: {mins + ':' + secs}</h4>
@@ -587,7 +673,7 @@ class Game extends Component {
                         <h3>Players Finished</h3>
                         <ol>
                         {this.state.game.players_finished.map((player) => (
-                        <li key={player + '-finished'}>{this.state.game.registered_users[player]}</li>))}
+                        <li key={player + '-finished-' + Math.random() * 100}>{this.state.game.registered_users[player]}</li>))}
                         </ol>
                     </div>
                 )}
