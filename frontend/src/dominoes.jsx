@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import SignUp from "./signup/signup.jsx";
 import Lobby from "./lobby/lobby.jsx";
-import Game from "./game/game";
+import Game from "./game/game.jsx";
 
 class Dominoes extends Component {
     constructor(props) {
@@ -36,30 +36,30 @@ class Dominoes extends Component {
     componentDidMount() {
         const username = this.getCookie('username');
         if (username) {
-            this.setState({isSignedUp: true, username: username});
+            this.setState({ isSignedUp: true, username: username });
         }
         setInterval(() => {
             fetch('/users', {
                 method: 'get'
             }).then(response => response.json())
                 .then(data => {
-                    this.setState({players: data});
+                    this.setState({ players: data });
                 });
             fetch('/games', {
                 method: 'get'
             }).then(response => response.json())
                 .then(data => {
-                    this.setState({games: data});
+                    this.setState({ games: data });
                 });
         }, 2000);
     }
 
     getData(username) {
-        this.setState({isSignedUp: true, username: username});
+        this.setState({ isSignedUp: true, username: username });
     }
 
     getGameData(gamename) {
-        this.setState({activeGame: gamename});
+        this.setState({ activeGame: gamename });
     }
 
     render() {
@@ -67,12 +67,12 @@ class Dominoes extends Component {
             <div>
                 {!this.state.isSignedUp && <SignUp sendData={this.getData} />}
                 {this.state.isSignedUp && !this.state.activeGame && <Lobby sendGameData={this.getGameData}
-                                                                           games={this.state.games}
-                                                                           players={this.state.players}
-                                                                           username={this.state.username} />}
+                    games={this.state.games}
+                    players={this.state.players}
+                    username={this.state.username} />}
                 {this.state.activeGame && <Game sendGameData={this.getGameData}
-                                                username={this.state.username}
-                                                game={this.state.games[this.state.activeGame] }/>}
+                    username={this.state.username}
+                    game={this.state.games[this.state.activeGame]} />}
             </div>
         );
     }
