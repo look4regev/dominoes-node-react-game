@@ -1,8 +1,14 @@
 # dominoes-node-react-game
-Dominoes game for a single player implemented with ReactJS and no backend
+Dominoes game for multiple players implemented with ReactJS and nodejs.
 
-## How to work in development mode
-1. `npm install`
-2. `npm run build-watch` (Keep it open- it will rebuild your `public` dir on code change)
-3. Open in your browser:
-`file:///path-to-repo/public/index.html`
+## How to play and work in development mode
+### 1) Nodejs backend
+1. `cd backend`
+2. `npm install`
+3. `nodejs server.js` or with [nodemon](https://github.com/remy/nodemon) (to restart on code changes): `nodemon server.js`
+4. Verify: `curl localhost:8000/health`
+
+### 2) React frontend
+1. `cd frontend`
+2. `npm install`
+3. `npm run start`
