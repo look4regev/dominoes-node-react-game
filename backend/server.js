@@ -16,8 +16,8 @@ let games = {};
 const PlayerInitialDominoesCount = 6;
 
 const allDominoes = {
-    0:  { dot: 0,  direction: Left }, 1:  { dot: 1,  direction: Left }, 2:  { dot: 2,  direction: Left }, 3:  { dot: 3,  direction: Left }, 4:  { dot: 4,  direction: Left }, 5:  { dot: 5,  direction: Left }, 6:  { dot: 6,  direction: Left },
-    11: { dot: 11, direction: Left }, 12: { dot: 12, direction: Left }, 13: { dot: 13, direction: Left }, 14: { dot: 14, direction: Left }, 15: { dot: 15, direction: Left }, 16: { dot: 16 , direction: Left },
+    0: { dot: 0, direction: Left }, 1: { dot: 1, direction: Left }, 2: { dot: 2, direction: Left }, 3: { dot: 3, direction: Left }, 4: { dot: 4, direction: Left }, 5: { dot: 5, direction: Left }, 6: { dot: 6, direction: Left },
+    11: { dot: 11, direction: Left }, 12: { dot: 12, direction: Left }, 13: { dot: 13, direction: Left }, 14: { dot: 14, direction: Left }, 15: { dot: 15, direction: Left }, 16: { dot: 16, direction: Left },
     22: { dot: 22, direction: Left }, 23: { dot: 23, direction: Left }, 24: { dot: 24, direction: Left }, 25: { dot: 25, direction: Left }, 26: { dot: 26, direction: Left },
     33: { dot: 33, direction: Left }, 34: { dot: 34, direction: Left }, 35: { dot: 35, direction: Left }, 36: { dot: 36, direction: Left },
     44: { dot: 44, direction: Left }, 45: { dot: 45, direction: Left }, 46: { dot: 46, direction: Left },
@@ -25,7 +25,11 @@ const allDominoes = {
     66: { dot: 66, direction: Left }
 };
 
-router.post('/signup', function(req, res) {
+router.get('/health', function (req, res) {
+    res.status(200).send({ "status": "UP" });
+});
+
+router.post('/signup', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
     if (!username) {
@@ -41,7 +45,7 @@ router.post('/signup', function(req, res) {
     res.sendStatus(200);
 });
 
-router.post('/logout', function(req, res) {
+router.post('/logout', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
     if (!username) {
@@ -78,7 +82,7 @@ function getRandomDominoes(players, allDominoes) {
 function getPlayerDecks(players, allDominoes) {
     let player_decks = [];
     const randomDominoes = getRandomDominoes(players, allDominoes);
-    for (let i = 0; i < players; i++ ) {
+    for (let i = 0; i < players; i++) {
         const randomPlayerDominoes = randomDominoes.slice(i * PlayerInitialDominoesCount, i * PlayerInitialDominoesCount + PlayerInitialDominoesCount);
         player_decks[i] = Object.keys(allDominoes).filter((k) => randomPlayerDominoes.includes(k));
     }
@@ -119,7 +123,7 @@ function createGame(players, gamename, username) {
     };
 }
 
-router.post('/creategame', function(req, res) {
+router.post('/creategame', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
     if (!username) {
@@ -153,18 +157,18 @@ router.post('/creategame', function(req, res) {
     res.sendStatus(200);
 });
 
-router.post('/updategame', function(req, res) {
+router.post('/updategame', function (req, res) {
     res.contentType('application/json');
     const objectPosted = req.body;
     if (!objectPosted) {
-        res.status(500).send({"error": "must provide game"});
+        res.status(500).send({ "error": "must provide game" });
         return;
     }
     let game;
     if ('drawFromBank' in objectPosted) {
         game = objectPosted.game;
         if (!game) {
-            res.status(500).send({"error": "must provide game"});
+            res.status(500).send({ "error": "must provide game" });
             return;
         }
         game.last_move_draw = true;
@@ -180,7 +184,7 @@ router.post('/updategame', function(req, res) {
     res.sendStatus(200);
 });
 
-router.post('/deletegame', function(req, res) {
+router.post('/deletegame', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
     if (!username) {
@@ -226,7 +230,7 @@ function getPlayerStatistics(players) {
     return statistics;
 }
 
-router.post('/joingame', function(req, res) {
+router.post('/joingame', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
     if (!username) {
@@ -270,7 +274,7 @@ router.post('/joingame', function(req, res) {
     res.sendStatus(200);
 });
 
-router.post('/singlegame', function(req, res) {
+router.post('/singlegame', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
     if (!username) {
@@ -302,7 +306,7 @@ router.post('/singlegame', function(req, res) {
     res.sendStatus(200);
 });
 
-router.post('/leavegame', function(req, res) {
+router.post('/leavegame', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
     const clearRoom = req.body.clearroom;
@@ -325,7 +329,7 @@ router.post('/leavegame', function(req, res) {
     res.sendStatus(200);
 });
 
-router.get('/issignedin', function(req, res) {
+router.get('/issignedin', function (req, res) {
     res.contentType('application/json');
     const username = req.query.username;
     if (!username) {
@@ -335,12 +339,12 @@ router.get('/issignedin', function(req, res) {
     usernames.includes(username) ? res.send({ "answer": "yes" }) : res.send({ "answer": "no" });
 });
 
-router.get('/users', function(req, res) {
+router.get('/users', function (req, res) {
     res.contentType('application/json');
     res.send(usernames);
 });
 
-router.get('/games', function(req, res) {
+router.get('/games', function (req, res) {
     res.contentType('application/json');
     const gamename = req.query.gamename;
     if (!gamename) {
