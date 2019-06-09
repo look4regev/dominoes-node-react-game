@@ -31,14 +31,14 @@ class SignUp extends Component {
     }
 
     updateInputValue(evt) {
-        this.setState({inputValue: evt.target.value})
+        this.setState({ inputValue: evt.target.value })
     }
 
     render() {
         return (
             <div className="signup-form">
-                <h1>Sign Up</h1>
-                <input value={this.state.inputValue} onChange={evt => this.updateInputValue(evt)}/>
+                <h1>Hi! Let's start playing dominoes!</h1>
+                <input value={this.state.inputValue} onChange={evt => this.updateInputValue(evt)} />
                 <button onClick={() => this.signUp()}>
                     Sign Up
                 </button>
