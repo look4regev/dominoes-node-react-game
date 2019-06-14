@@ -92,7 +92,7 @@ class Game extends Component {
         this.props.sendGameData(gamename);
     }
 
-    leaveRoomFetch = data => {
+    leaveRoomFetch(data) {
         fetch('/leavegame', {
             method: 'post',
             body: data
@@ -107,7 +107,7 @@ class Game extends Component {
                 alert(jsonData.error);
             }
         });
-    };
+    }
 
     leaveRoom() {
         if (!this.isGameInProgress()) {
@@ -490,7 +490,7 @@ class Game extends Component {
         }
     }
 
-    createStatisticsTable = () => {
+    createStatisticsTable() {
         let table = [];
         for (let i = 0; i < this.state.game.players; i++) {
             let children = [];
@@ -504,7 +504,7 @@ class Game extends Component {
             table.push(<tr>{children}</tr>)
         }
         return table
-    };
+    }
 
     isGameOver() {
         return this.state.game.players_finished.length === this.state.game.players || this.isEverybodyPlayingStuck();
