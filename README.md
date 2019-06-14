@@ -5,7 +5,7 @@ Dominoes game for multiple players implemented with ReactJS and nodejs.
 ### 1) Nodejs backend
 1. `cd backend`
 2. `npm install`
-3. `nodejs server.js` or with [nodemon](https://github.com/remy/nodemon) (to restart on code changes): `nodemon server.js`
+3. `npm run start-watch`
 4. Verify: `curl localhost:8000/health`
 
 ### 2) React frontend

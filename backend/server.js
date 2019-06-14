@@ -1,6 +1,8 @@
 const Left = 0;
 const Empty = -1;
 
+const PORT = 8000;
+
 let express = require('express');
 let router = express.Router();
 let _ = require('lodash');
@@ -358,4 +360,5 @@ router.get('/games', function (req, res) {
     }
 });
 
-app.listen(8000);
+console.log(`Starting.. See http://localhost:${PORT}/health for health check`);
+app.listen(PORT);
