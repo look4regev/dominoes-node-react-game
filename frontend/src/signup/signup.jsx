@@ -38,6 +38,7 @@ class SignUp extends Component {
         return (
             <div className="signup-form">
                 <h1>Hi! Let's start playing dominoes!</h1>
+                <h2>Please choose your username:</h2>
                 <input value={this.state.inputValue} onChange={evt => this.updateInputValue(evt)} />
                 <button onClick={() => this.signUp()}>
                     Sign Up
