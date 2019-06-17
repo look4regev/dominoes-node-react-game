@@ -14,8 +14,8 @@ class GameRooms extends Component {
         this.deleteGame = this.deleteGame.bind(this);
     }
 
-    componentWillReceiveProps({games}) {
-        this.setState({games: games});
+    componentWillReceiveProps({ games }) {
+        this.setState({ games: games });
     }
 
     joinGame(game) {
@@ -102,28 +102,30 @@ class GameRooms extends Component {
         return (
             <table>
                 <thead>
-                <tr>
-                    <th>Game Name</th>
-                    <th>Max Players</th>
-                    <th>Owner</th>
-                    <th>Registered</th>
-                    <th/>
-                    <th/>
-                </tr>
+                    <tr>
+                        <th>Game Name</th>
+                        <th>Max Players</th>
+                        <th>Owner</th>
+                        <th>Registered</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
                 </thead>
                 <tbody>
-                {Object.keys(this.state.games).map((gamename) => {
-                    const game = this.state.games[gamename];
-                    const username = this.state.username;
-                    return <tr key={gamename} className={GameRooms.gameStarted(game) && !GameRooms.gameFinished(game) ? 'activegame': ''}>
-                        <td>{game.gamename}</td>
-                        <td>{game.players}</td>
-                        <td>{game.username}</td>
-                        <td>{game.registered_users.join(',')}</td>
-                        <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
-                        <td>{game.registered_users.length === 0 && <button onClick={() => this.singleGame(game)}>Single Game</button>}</td>
-                        <td>{game.username === username && <button onClick={() => this.deleteGame(game)}>Delete</button>}</td>
-                    </tr>})}
+                    {Object.keys(this.state.games).map((gamename) => {
+                        const game = this.state.games[gamename];
+                        const username = this.state.username;
+                        return <tr key={gamename} className={GameRooms.gameStarted(game) && !GameRooms.gameFinished(game) ? 'activegame' : ''}>
+                            <td>{game.gamename}</td>
+                            <td>{game.players}</td>
+                            <td>{game.username}</td>
+                            <td>{game.registered_users.join(',')}</td>
+                            <td>{!GameRooms.gameStarted(game) && <button onClick={() => this.joinGame(game)}>Join</button>}</td>
+                            <td>{game.registered_users.length === 0 && <button onClick={() => this.singleGame(game)}>Single Game</button>}</td>
+                            <td>{game.username === username && <button onClick={() => this.deleteGame(game)}>Delete</button>}</td>
+                        </tr>
+                    })}
                 </tbody>
             </table>
         );

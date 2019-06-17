@@ -19,11 +19,11 @@ class Lobby extends Component {
     }
 
     handleNameChange(event) {
-        this.setState({gameNameInput: event.target.value});
+        this.setState({ gameNameInput: event.target.value });
     }
 
     handlePlayersChange(event) {
-        this.setState({gamePlayersInput: event.target.value});
+        this.setState({ gamePlayersInput: event.target.value });
     }
 
     getGameData(gamename) {
@@ -62,7 +62,7 @@ class Lobby extends Component {
         }, 5000);
     }
 
-    componentWillReceiveProps({games, players}) {
+    componentWillReceiveProps({ games, players }) {
         this.setState({
             games: games,
             players: players
@@ -92,7 +92,7 @@ class Lobby extends Component {
             body: data
         }).then(res => {
             if (res.status === 200) {
-                this.setState({gameNameInput: '', gamePlayersInput: '2'});
+                this.setState({ gameNameInput: '', gamePlayersInput: '2' });
             } else {
                 return res.json();
             }
@@ -107,35 +107,47 @@ class Lobby extends Component {
         return (
             <div className="lobby">
                 <h1>Lobby</h1>
-                <button onClick={this.logout}>Logout</button>
-                <div className="players">
-                    <h2>Players</h2>
-                    <ul>
-                        {this.state.players.map((player) => (
-                            <li key={player} className={player === this.state.username ? 'me' : ''}>{player}</li>
-                        ))}
-                    </ul>
-                </div>
-                <div className="games">
-                    <h2>Games</h2>
-                    <h3>Create Game</h3>
-                    <div className="creategame">
-                        <label>
-                            Game Name:
-                            <input type="text" value={this.state.gameNameInput} onChange={evt => this.handleNameChange(evt)} />
-                        </label>
-                        <label>
-                            Players:
-                            <select onChange={evt => this.handlePlayersChange(evt)} value={this.state.gamePlayersInput}>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                            </select>
-                        </label>
-                        <button onClick={this.createGame}>Create</button>
-                    </div>
-                    <h3>Game Rooms</h3>
-                    <GameRooms sendGameData={this.getGameData} games={this.state.games} username={this.state.username}/>
-                </div>
+                <table width="60%">
+                    <tbody>
+                        <tr>
+                            <td valign="top">
+                                <div className="players">
+                                    <h2>Players</h2>
+                                    <ul>
+                                        {this.state.players.map((player) => (
+                                            <li key={player} className={player === this.state.username ? 'me' : ''}>{player}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </td>
+                            <td>
+                                <div className="games">
+                                    <h2>Games</h2>
+                                    <h3>Create Game</h3>
+                                    <div className="creategame" align="center">
+                                        <label>Game Name: </label>
+                                        <input type="text" value={this.state.gameNameInput} onChange={evt => this.handleNameChange(evt)} />
+                                        &nbsp; &nbsp;
+                                        <label>Players:</label>
+                                        <select onChange={evt => this.handlePlayersChange(evt)} value={this.state.gamePlayersInput}>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                        <button onClick={this.createGame}>Create</button>
+                                    </div>
+                                    <h3>Game Rooms</h3>
+                                    <GameRooms sendGameData={this.getGameData} games={this.state.games} username={this.state.username} />
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colSpan="2">
+                                <br/>
+                                <button onClick={this.logout}>Logout</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div >
         );
     }

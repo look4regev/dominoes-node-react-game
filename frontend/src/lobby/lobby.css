@@ -1,11 +1,8 @@
 .players {
-  width: 15%;
-  background: red;
   float: left;
 }
 
 .games {
-  margin-left: 15%;
   background: grey;
 }
 
