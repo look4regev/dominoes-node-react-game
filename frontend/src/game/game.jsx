@@ -61,6 +61,9 @@ class Game extends Component {
 
     componentWillUnmount() {
         clearInterval(this.interval);
+        this.setState({
+            valid_placements: []
+        });
         deckFilled = false;
         playerIndex = -2;
     }
