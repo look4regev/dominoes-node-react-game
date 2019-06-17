@@ -608,87 +608,101 @@ class Game extends Component {
         return (
             <div>
                 <h1>Dominoes <img src={ImageHeadline} alt='dominoesheader' /> Game!</h1>
-                <div className="players">
-                    {playerIndex >= 0 && (
-                        <h2>Player {playerIndex + 1}</h2>
-                    )}
-                    <button disabled={missingPlayers === 0} onClick={this.logout}>Logout</button>
-                    <button disabled={missingPlayers === 0 && !this.state.game.players_finished.includes(playerIndex)} onClick={this.leaveRoom}>Leave Room</button>
-                    {this.isCurrentPlayerTurn() && (
-                        <h2>Your turn</h2>
-                    )}
-                    {missingPlayers === 0 && !this.isCurrentPlayerTurn() && (
-                        <h2>Player {this.state.game.player_turn + 1}'s turn</h2>
-                    )}
-                    {missingPlayers > 0 && (
-                        <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
-                    )}
-                    {this.state.game.last_move_draw && !this.isPlayedLastTurn() && (
-                        <h4>Player {this.getLastPlayerPlayed() + 1} drew from bank</h4>
-                    )}
-                    <h4>Players in Game</h4>
-                    {this.state.game.registered_users.map((player) => (
-                        <li key={player + '-ingame'} className={player === this.state.username ? 'me' : ''}>{player}</li>
-                    ))}
-                </div>
-                {!this.isGameOver() && (
-                    <div>
-                        <h2>Board:</h2>
-                        <div
-                            onDragOver={(e) => Game.onDragOver(e)}
-                            onDrop={(e) => this.onDrop(e)}>
-                            <Board allDominoes={this.state.game.all_dominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board} />
-                        </div>
-                        <h2>Player deck:</h2>
-                        <div onDragOver={(e) => Game.onDragOver(e)}>
-                            <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerIndex < 0 ? [] : this.state.game.player_decks[playerIndex]} />
-                        </div>
-                        <div className="control">
-                            <button disabled={!currentPlayersTurn || this.state.game.bank.length === 0} onClick={() => this.getBankDomino()}>
-                                Get domino from the bank
-                    </button>
-                            <button disabled={!currentPlayersTurn || this.state.game.players === 1 || !this.isPlayerStuck(playerIndex)} onClick={() => this.skipTurn()}>
-                                Skip turn
-                    </button>
-                        </div>
-                        <div className="statistics">
-                            <h4>Plays counter: {statistics.plays_count}</h4>
-                            <h4>Elapsed time: {mins + ':' + secs}</h4>
-                            <h4>Average time: {avg + 's'}</h4>
-                            <h4>Pieces taken: {statistics.pieces_taken}</h4>
-                            <h4>Total score: {statistics.total_score}</h4>
-                        </div>
-                    </div>
-                )}
-                {this.isGameOver() && (
-                    <div>
-                        <h2>Game Summary:</h2>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Play Count</th>
-                                    <th>Pieces Taken</th>
-                                    <th>Total Score</th>
-                                    <th>Elapsed Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {this.createStatisticsTable()}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-                <h2>{endResult}</h2>
-                {this.state.game.players_finished.length > 0 && (
-                    <div>
-                        <h3>Players Finished</h3>
-                        <ol>
-                            {this.state.game.players_finished.map((player) => (
-                                <li key={player + '-finished-' + Math.random() * 100}>{this.state.game.registered_users[player]}</li>))}
-                        </ol>
-                    </div>
-                )}
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div className="players">
+                                    {playerIndex >= 0 && (
+                                        <h2>Player {playerIndex + 1}</h2>
+                                    )}
+                                    <button disabled={missingPlayers === 0} onClick={this.logout}>Logout</button>
+                                    <button disabled={missingPlayers === 0 && !this.state.game.players_finished.includes(playerIndex)} onClick={this.leaveRoom}>Leave Room</button>
+                                    {this.isCurrentPlayerTurn() && (
+                                        <h2>Your turn</h2>
+                                    )}
+                                    {missingPlayers === 0 && !this.isCurrentPlayerTurn() && (
+                                        <h2>Player {this.state.game.player_turn + 1}'s turn</h2>
+                                    )}
+                                    {missingPlayers > 0 && (
+                                        <h2>Waiting for {missingPlayers > 1 ? missingPlayers + ' more players' : missingPlayers + ' more player'}</h2>
+                                    )}
+                                    {this.state.game.last_move_draw && !this.isPlayedLastTurn() && (
+                                        <h4>Player {this.getLastPlayerPlayed() + 1} drew from bank</h4>
+                                    )}
+                                    <h4>Players in Game</h4>
+                                    {this.state.game.registered_users.map((player) => (
+                                        <li key={player + '-ingame'} className={player === this.state.username ? 'me' : ''}>{player}</li>
+                                    ))}
+                                </div>
+                            </td>
+                            <td>
+                                {!this.isGameOver() && (
+                                    <div>
+                                        <h2>Board:</h2>
+                                        <div
+                                            onDragOver={(e) => Game.onDragOver(e)}
+                                            onDrop={(e) => this.onDrop(e)}>
+                                            <Board allDominoes={this.state.game.all_dominoes} valid_placements={this.state.valid_placements} dominoes={this.state.game.board} />
+                                        </div>
+                                        <h2>Player deck:</h2>
+                                        <div onDragOver={(e) => Game.onDragOver(e)}>
+                                            <PlayerDeck allDominoes={this.state.game.all_dominoes} sendDrag={this.getDrag} sendData={this.getData} dominoes={playerIndex < 0 ? [] : this.state.game.player_decks[playerIndex]} />
+                                        </div>
+                                        <div className="control">
+                                            <button disabled={!currentPlayersTurn || this.state.game.bank.length === 0} onClick={() => this.getBankDomino()}>
+                                                Get domino from the bank
+                                            </button>
+                                            <button disabled={!currentPlayersTurn || this.state.game.players === 1 || !this.isPlayerStuck(playerIndex)} onClick={() => this.skipTurn()}>
+                                                Skip turn
+                                            </button>
+                                        </div>
+                                        <div className="statistics">
+                                            <h4>Plays counter: {statistics.plays_count}</h4>
+                                            <h4>Elapsed time: {mins + ':' + secs}</h4>
+                                            <h4>Average time: {avg + 's'}</h4>
+                                            <h4>Pieces taken: {statistics.pieces_taken}</h4>
+                                            <h4>Total score: {statistics.total_score}</h4>
+                                        </div>
+                                    </div>
+                                )}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {this.isGameOver() && (
+                                    <div>
+                                        <h2>Game Summary:</h2>
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Player</th>
+                                                    <th>Play Count</th>
+                                                    <th>Pieces Taken</th>
+                                                    <th>Total Score</th>
+                                                    <th>Elapsed Time</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {this.createStatisticsTable()}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                <h2>{endResult}</h2>
+                                {this.state.game.players_finished.length > 0 && (
+                                    <div>
+                                        <h3>Players Finished</h3>
+                                        <ol>
+                                            {this.state.game.players_finished.map((player) => (
+                                                <li key={player + '-finished-' + Math.random() * 100}>{this.state.game.registered_users[player]}</li>))}
+                                        </ol>
+                                    </div>
+                                )}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div >
         );
     }
