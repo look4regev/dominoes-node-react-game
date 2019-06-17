@@ -31,6 +31,10 @@ router.get('/health', function (req, res) {
     res.status(200).send({ "status": "UP" });
 });
 
+router.get('/favicon.ico', function (req, res) {
+    res.status(200).sendFile(__dirname + '/favicon.ico');
+});
+
 router.post('/signup', function (req, res) {
     res.contentType('application/json');
     const username = req.body.username;
